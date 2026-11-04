@@ -1,5 +1,6 @@
 // The learning hub catalog. Add a module here and it shows up on the Games tab automatically.
 // coins/xp = reward for the first completion each day (matches the badges on the Canva cards).
+   export const PM25_VIDEO_URL = 'https://www.youtube.com/watch?v=utF7NuuiZrQ';
 export const MODULES = [
   { id: 'lung',    title: 'Lung Cancer',        kind: 'Interactive', type: 'Interactive', xp: 800,  coins: 50, img: 'assets/cards/lung.jpg',   route: '#/learn/lung',
     keywords: 'lesson cancer pm2.5 oxidative stress carcinogen' },

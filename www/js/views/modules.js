@@ -138,63 +138,154 @@ export function breathe(view) {
 }
 
 // ---------- Firefighter Frenzy ----------
-// Tap embers before they land. Smoke raises your exposure meter; grab SCBA masks 🎭→😷 to stop it.
+// Illustrated neighborhood at dusk. Fires break out in windows; tap to put them out.
+// Fires left burning send smoke into the air and raise your exposure. Grab the SCBA mask to stay protected.
+const FLAME = `<g class="flame"><path d="M0-34C9-22 16-14 14-3 13 6 7 12 0 12S-13 6-14-3C-15-12-8-17-4-26-3-18 1-15 3-13 4-20 2-27 0-34z" fill="#d9480f"/>
+  <path d="M0-20C6-12 9-7 8-1 7 5 4 8 0 8S-7 5-8-1C-8-6-5-9-2-14-1-9 1-8 2-7 3-11 2-15 0-20z" fill="#f08c00"/>
+  <path d="M0-8C3-4 4-2 4 1 4 4 2 5 0 5S-4 4-4 1C-4-1-2-3 0-8z" fill="#fcc419"/></g>`;
+const MASK = `<g class="scba"><circle r="20" fill="#fff" stroke="#1c7ed6" stroke-width="3"/><path d="M-10-6c0-6 4-9 10-9s10 3 10 9v6c0 7-5 12-10 12S-10 7-10 0z" fill="#343a40"/>
+  <rect x="-7" y="-9" width="14" height="8" rx="3" fill="#a5d8ff"/><circle cy="6" r="4" fill="#868e96"/></g>`;
+
+function scene() {
+  // buildings: [x, width, height, color, windowCols, windowRows]
+  const B = [[8, 70, 250, '#56657a', 2, 5], [86, 90, 330, '#6b7a8f', 3, 6], [184, 64, 210, '#4d5b6e', 2, 4], [256, 84, 290, '#627187', 3, 5], [348, 46, 230, '#56657a', 1, 4]];
+  const ground = 470; const windows = [];
+  const bld = B.map(([x, w, h, c, cols, rows]) => {
+    const top = ground - h; let win = '';
+    const gx = w / cols, gy = (h - 40) / rows;
+    for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) {
+      const wx = x + gx * k + gx / 2, wy = top + 26 + gy * r + gy / 2;
+      windows.push([wx, wy]);
+      win += `<rect x="${wx - 9}" y="${wy - 11}" width="18" height="22" rx="2" fill="#f4e8cc"/>`;
+    }
+    return `<rect x="${x}" y="${top}" width="${w}" height="${h}" fill="${c}"/><rect x="${x - 3}" y="${top - 6}" width="${w + 6}" height="8" fill="#3d4858"/>${win}`;
+  }).join('');
+  const svg = `<svg class="scene" viewBox="0 0 400 560" preserveAspectRatio="xMidYMax slice">
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7c59f"/><stop offset=".6" stop-color="#f6dcc0"/><stop offset="1" stop-color="#efe3d3"/></linearGradient></defs>
+    <rect width="400" height="560" fill="url(#sky)"/>
+    <circle cx="320" cy="90" r="34" fill="#f9d8a8"/>
+    <path d="M0 360 Q80 300 160 340 T320 320 T400 330 V560 H0z" fill="#d9b99b"/>
+    <path d="M0 400 Q100 360 200 390 T400 380 V560 H0z" fill="#c8a688"/>
+    <g id="smokeLayer"></g>
+    ${bld}
+    <rect y="${ground}" width="400" height="90" fill="#7b8a6a"/><rect y="${ground + 30}" width="400" height="34" fill="#495057"/>
+    <path d="M0 ${ground + 47}h400" stroke="#f1f3f5" stroke-width="2" stroke-dasharray="18 14"/>
+    <g id="fireLayer"></g><g id="fxLayer"></g>
+  </svg>`;
+  return { svg, windows, ground };
+}
+
 export function frenzy(view) {
-  view.innerHTML = `<div class="frenzy">${head('Firefighter Frenzy', `<span class="xp-pill" style="border-color:#ff8a65;color:#ff8a65">+${byId('frenzy').xp} XP</span>`)}
-    <div class="hud"><span>🔥 <b id="fs">0</b></span><div class="meter time"><i id="ft" style="width:100%"></i></div><span id="fsec">45s</span></div>
-    <div class="hud"><small>Exposure</small><div class="meter exp"><i id="fe" style="width:0%"></i></div><small id="fep">0%</small></div>
-    <div class="arena" id="arena"><div class="smoke-veil" id="veil" style="opacity:0"></div><div class="shield-ring" id="shield"></div>
-      <div class="overlay" id="ov"><h2>Firefighter Frenzy</h2>
-        <div class="howto"><span>🔥</span><span>Tap embers before they hit the ground</span><span>💨</span><span>Missed embers make smoke and raise your exposure</span><span>😷</span><span>Grab an SCBA mask to block smoke for 5 seconds</span></div>
-        <p>Keep exposure under 100% for 45 seconds. Protection matters as much as speed!</p><button class="cta" id="start">Start shift</button></div></div></div>`;
-  const arena = $('#arena', view);
-  let raf, last, spawnT = 0, time = 45, score = 0, exposure = 0, shield = 0, sprites = [], running = false;
-  const W = () => arena.clientWidth, H = () => arena.clientHeight;
-  const pop = (x, y, t, c) => { const e = document.createElement('div'); e.className = 'pop'; e.style.cssText = `left:${x}px;top:${y}px;color:${c}`; e.textContent = t; arena.appendChild(e); setTimeout(() => e.remove(), 700); };
-  const spawn = () => {
-    const mask = Math.random() < 0.09;
-    const el = document.createElement('div'); el.className = `sprite ${mask ? 'mask' : ''}`;
-    const size = mask ? 40 : 30 + Math.random() * 18; el.style.fontSize = `${size}px`;
-    el.textContent = mask ? '😷' : Math.random() < 0.2 ? '💥' : '🔥';
-    const s = { el, x: 10 + Math.random() * (W() - size - 20), y: -50, v: (mask ? 90 : 70 + Math.random() * 60) * (1 + (45 - time) / 60), mask, size };
-    el.addEventListener('pointerdown', (e) => {
-      e.preventDefault(); if (!running) return;
-      if (s.mask) { shield = 5; pop(s.x, s.y, 'SCBA ON!', '#4fc3f7'); } else { score++; pop(s.x, s.y, '+1', '#ffd54a'); }
-      haptic(); remove(s);
-    });
-    arena.appendChild(el); sprites.push(s);
+  const mod = byId('frenzy');
+  const { svg, windows, ground } = scene();
+  view.innerHTML = `<div class="frenzy">
+    <header class="fz-head"><a class="fz-exit" href="#/home">Exit</a><h1>Firefighter Frenzy</h1><span class="fz-xp">+${mod.xp} XP</span></header>
+    <div class="fz-hud">
+      <div><small>Fires out</small><b id="fs">0</b></div>
+      <div class="fz-bar"><small>Time</small><div class="meter time"><i id="ft" style="width:100%"></i></div></div>
+      <div class="fz-bar"><small>Smoke exposure <span id="fep">0%</span></small><div class="meter exp"><i id="fe" style="width:0%"></i></div></div>
+      <span class="fz-scba" id="scbaTag" hidden>SCBA on</span>
+    </div>
+    <div class="arena" id="arena">${svg}
+      <div class="overlay" id="ov"><div class="fz-card">
+        <h2>Firefighter Frenzy</h2>
+        <ul class="howto">
+          <li><svg viewBox="-16 -36 32 50" width="26">${FLAME}</svg>Tap fires to put them out. Catch them early for bonus points.</li>
+          <li><span class="smoke-ico"></span>Fires left burning release smoke and raise your exposure.</li>
+          <li><svg viewBox="-22 -22 44 44" width="26">${MASK}</svg>Grab the SCBA mask to breathe clean air for 6 seconds.</li>
+        </ul>
+        <p>Last 45 seconds without your exposure reaching 100%.</p>
+        <button class="fz-btn" id="start">Start shift</button></div></div>
+    </div></div>`;
+
+  const svgEl = $('.scene', view), fireLayer = $('#fireLayer', view), smokeLayer = $('#smokeLayer', view), fx = $('#fxLayer', view);
+  const NS = 'http://www.w3.org/2000/svg';
+  let raf, last = 0, time, score, exposure, shield, spawnT, maskT, fires, mask, running = false;
+
+  const node = (html, x, y) => { const g = document.createElementNS(NS, 'g'); g.setAttribute('transform', `translate(${x} ${y})`); g.innerHTML = html; return g; };
+  const splash = (x, y) => {
+    const g = node(`<g class="splash"><circle r="6" fill="#74c0fc"/><circle cx="-10" cy="-6" r="4" fill="#a5d8ff"/><circle cx="9" cy="-8" r="4" fill="#a5d8ff"/><circle cx="2" cy="-16" r="3" fill="#d0ebff"/></g>`, x, y); fx.appendChild(g); setTimeout(() => g.remove(), 500);
   };
-  const remove = (s) => { s.el.remove(); sprites = sprites.filter((x) => x !== s); };
+  const puff = (x, y) => {
+    const g = node(`<g class="puff"><circle r="${10 + Math.random() * 8}" fill="#868e96"/></g>`, x + (Math.random() * 10 - 5), y - 20); smokeLayer.appendChild(g); setTimeout(() => g.remove(), 3000);
+  };
+  const floater = (x, y, text, color) => {
+    const t = document.createElementNS(NS, 'text'); t.setAttribute('x', x); t.setAttribute('y', y - 30); t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('fill', color); t.setAttribute('class', 'floater'); t.textContent = text; fx.appendChild(t); setTimeout(() => t.remove(), 800);
+  };
+
+  const spawnFire = () => {
+    const free = windows.filter(([x, y]) => !fires.some((f) => f.x === x && f.y === y));
+    if (!free.length) return;
+    const [x, y] = free[Math.floor(Math.random() * free.length)];
+    const g = node(`<rect x="-9" y="-11" width="18" height="22" rx="2" fill="#e8590c" opacity=".35"/><g class="grow">${FLAME}</g><circle r="22" fill="transparent"/>`, x, y + 8);
+    g.classList.add('fire');
+    const f = { x, y, g, age: 0, puffT: 0 };
+    g.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); if (!running) return;
+      const early = f.age < 2.5; score += early ? 2 : 1;
+      splash(x, y); floater(x, y, early ? '+2' : '+1', '#1864ab'); haptic();
+      g.remove(); fires = fires.filter((z) => z !== f);
+    });
+    fireLayer.appendChild(g); fires.push(f);
+  };
+
+  const spawnMask = () => {
+    if (mask) return;
+    const x = 30 + Math.random() * 340, y = ground + 16;
+    const g = node(`<g class="mask-item">${MASK}</g>`, x, y);
+    g.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); if (!running) return;
+      shield = 6; floater(x, y, 'SCBA on', '#1864ab'); haptic('Medium'); g.remove(); mask = null;
+    });
+    fireLayer.appendChild(g); mask = { g, life: 5 };
+  };
+
   const end = (burned) => {
-    running = false; cancelAnimationFrame(raf); sprites.forEach((s) => s.el.remove()); sprites = [];
+    running = false; cancelAnimationFrame(raf);
     store.update((st) => { st.stats.frenzyBest = Math.max(st.stats.frenzyBest, score); });
-    const frac = burned ? 0.3 : Math.min(1, 0.5 + score / 60);
-    const r = finish('frenzy', frac);
+    const r = finish('frenzy', burned ? 0.3 : Math.min(1, 0.5 + score / 50));
     $('#ov', view).style.display = 'flex';
-    $('#ov', view).innerHTML = `<h2>${burned ? 'Too much smoke!' : 'Shift complete!'}</h2><p style="font-size:20px;color:#ff9800;font-weight:700">Embers: ${score}</p>
-      <p>${burned ? 'Your exposure hit 100%. In real life, smoke exposure adds up. Grab those SCBA masks!' : score >= 30 ? 'Outstanding work, firefighter!' : 'Good reflexes. Keep training.'}</p>
-      ${rewardHTML(r)}<button class="cta" id="start">Play again</button><a class="pill-btn" href="#/home" style="margin-top:10px">Exit</a>`;
+    $('#ov', view).innerHTML = `<div class="fz-card"><h2>${burned ? 'Too much smoke' : 'Shift complete'}</h2>
+      <p class="fz-score">${score} points</p>
+      <p>${burned ? 'Your exposure reached 100%. On a real fireground, smoke exposure adds up over a career, which is why SCBA stays on through overhaul.' : score >= 40 ? 'Outstanding work. Quick response keeps smoke, and exposure, down.' : 'Nice work. Try catching fires earlier to limit smoke.'}</p>
+      ${rewardHTML(r)}<button class="fz-btn" id="start">Play again</button></div>`;
     $('#start', view).onclick = start;
   };
+
   const tick = (t) => {
     if (!running) return;
     const dt = Math.min(0.05, (t - (last || t)) / 1000); last = t;
-    time -= dt; shield = Math.max(0, shield - dt); spawnT -= dt;
-    if (spawnT <= 0) { spawn(); spawnT = Math.max(0.35, 0.8 - (45 - time) / 90); }
-    for (const s of [...sprites]) {
-      s.y += s.v * dt; s.el.style.transform = `translate(${s.x}px,${s.y}px)`;
-      if (s.y > H()) { if (!s.mask && !shield) exposure += 7; remove(s); }
+    time -= dt; shield = Math.max(0, shield - dt); spawnT -= dt; maskT -= dt;
+    const pace = 1 + (45 - time) / 30;
+    if (spawnT <= 0) { spawnFire(); spawnT = Math.max(0.55, 1.6 / pace); }
+    if (maskT <= 0) { spawnMask(); maskT = 9 + Math.random() * 5; }
+    if (mask && (mask.life -= dt) <= 0) { mask.g.remove(); mask = null; }
+    for (const f of fires) {
+      f.age += dt;
+      const s = Math.min(1.5, 0.5 + f.age / 3);
+      f.g.querySelector('.grow').setAttribute('transform', `scale(${s})`);
+      if (f.age > 3) {
+        if (!shield) exposure += dt * 4.5;
+        if ((f.puffT -= dt) <= 0) { puff(f.x, f.y); f.puffT = 0.6; }
+      }
     }
-    if (!shield) exposure = Math.max(0, exposure - dt * 1.2);
-    $('#fs', view).textContent = score; $('#fsec', view).textContent = `${Math.ceil(time)}s`;
-    $('#ft', view).style.width = `${(time / 45) * 100}%`;
+    if (!fires.length) exposure = Math.max(0, exposure - dt * 3);
+    $('#fs', view).textContent = score;
+    $('#ft', view).style.width = `${Math.max(0, time / 45) * 100}%`;
     $('#fe', view).style.width = `${Math.min(100, exposure)}%`; $('#fep', view).textContent = `${Math.min(100, Math.round(exposure))}%`;
-    $('#veil', view).style.opacity = Math.min(0.85, exposure / 110); $('#shield', view).classList.toggle('on', shield > 0);
+    $('#scbaTag', view).hidden = shield <= 0;
+    $('#arena', view).style.setProperty('--haze', Math.min(0.55, exposure / 180));
     if (exposure >= 100) return end(true);
     if (time <= 0) return end(false);
     raf = requestAnimationFrame(tick);
   };
-  function start() { time = 45; score = 0; exposure = 0; shield = 0; spawnT = 0; last = 0; $('#ov', view).style.display = 'none'; running = true; raf = requestAnimationFrame(tick); }
+
+  function start() {
+    fireLayer.innerHTML = ''; smokeLayer.innerHTML = ''; fx.innerHTML = '';
+    time = 45; score = 0; exposure = 0; shield = 0; spawnT = 0.3; maskT = 6; fires = []; mask = null; last = 0;
+    $('#ov', view).style.display = 'none'; running = true; raf = requestAnimationFrame(tick);
+  }
   $('#start', view).onclick = start;
   return () => { running = false; cancelAnimationFrame(raf); };
 }
