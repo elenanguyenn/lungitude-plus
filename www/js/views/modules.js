@@ -4,8 +4,8 @@ import { byId } from '../data/modules.js';
 import { LESSON, QUIZ, TIPS } from '../data/content.js';
 import { $, $$, haptic, coinToast } from '../util.js';
 
-const head = (title, right = '') => `<header class="page-head"><a class="pill-btn" href="#/home">Exit</a><h1>${title}</h1>${right || '<span style="width:56px"></span>'}</header>`;
-const rewardHTML = (r) => `<div class="reward"><span>${icons.coin} +${r.coins} coins</span><span>⚡ +${r.xp} XP</span></div>
+const head = (title, right = '') => `<header class="page-head"><a class="pill-btn learning-back" href="#/home">${icons.back}<span>Back</span></a><h1>${title}</h1>${right || '<span class="learning-head-spacer"></span>'}</header>`;
+const rewardHTML = (r) => `<div class="reward"><span>${icons.coin} +${r.coins} coins</span><span>${icons.bolt} +${r.xp} XP</span></div>
   ${r.firstToday ? '' : '<p class="note center">Already completed today: repeats earn 10% XP. Come back tomorrow for the full reward!</p>'}`;
 function finish(id, fraction = 1) { const r = award(byId(id), fraction); if (r.coins || r.xp) coinToast(r.coins, r.xp); haptic('Medium'); return r; }
 
@@ -19,7 +19,7 @@ export function lesson(view) {
     const s = LESSON[i];
     if (!s) {
       const r = finish('lung', Math.max(0.5, correct / checks));
-      flow.insertAdjacentHTML('beforeend', `<div class="panel reveal center"><div class="big-emoji">🫁</div><h2>Lesson complete!</h2>
+      flow.insertAdjacentHTML('beforeend', `<div class="panel reveal center"><h2>Lesson complete</h2>
         <p>You got ${correct} of ${checks} quick checks right.</p>${rewardHTML(r)}
         <div class="btn-row"><a class="cta ghost" href="#/quiz">Smoke Shield Quiz</a><a class="cta" href="#/breathe">Breathing Coach</a></div></div>`);
       return;
@@ -44,28 +44,28 @@ export function lesson(view) {
 export function quiz(view) {
   let q = 0, xp = 0, streak = 0, right = 0;
   view.innerHTML = `${head('Smoke Shield Quiz', '<span class="xp-pill" id="qxp">0 XP</span>')}
-    <div class="body"><div class="progress"><i id="qbar"></i></div><p class="center" id="qstreak" style="color:#fff5c0;margin:10px 0 14px">🔥 Streak: 0</p><div id="qcard"></div></div>`;
+    <div class="body"><div class="progress"><i id="qbar"></i></div><p class="learning-streak" id="qstreak">Correct in a row: 0</p><div id="qcard"></div></div>`;
   const card = $('#qcard', view);
   const draw = () => {
     if (q >= QUIZ.length) {
       store.update((s) => { s.stats.quizBest = Math.max(s.stats.quizBest, right); });
       const r = finish('quiz', right / QUIZ.length);
       $('#qbar', view).style.width = '100%';
-      card.innerHTML = `<div class="panel center reveal"><div class="big-emoji">🏆</div><h2>Quiz complete!</h2><p>${right} / ${QUIZ.length} correct · best streak counts!</p>${rewardHTML(r)}
+      card.innerHTML = `<div class="panel center reveal"><h2>Quiz complete</h2><p>${right} / ${QUIZ.length} correct · best streak counts.</p>${rewardHTML(r)}
         <div class="btn-row"><button class="cta ghost" id="again">Try again</button><a class="cta" href="#/breathe">Breathing Coach →</a></div></div>`;
       $('#again', card).onclick = () => { q = xp = streak = right = 0; draw(); };
       return;
     }
     const d = QUIZ[q];
     $('#qbar', view).style.width = `${(q / QUIZ.length) * 100}%`;
-    card.innerHTML = `<div class="panel reveal"><div style="color:var(--cyan);font-size:12px;margin-bottom:8px">Question ${q + 1} of ${QUIZ.length}</div>
+    card.innerHTML = `<div class="panel reveal"><div class="learning-question-count">Question ${q + 1} of ${QUIZ.length}</div>
       <h3 style="line-height:1.45">${d.q}</h3><div class="choices">${d.choices.map((c, i) => `<button class="choice" data-i="${i}">${c}</button>`).join('')}</div><div id="qfoot"></div></div>`;
     $$('.choice', card).forEach((b) => b.onclick = () => {
       const i = +b.dataset.i, ok = i === d.answer;
       $$('.choice', card).forEach((x, j) => { x.disabled = true; if (j === d.answer) x.classList.add('correct'); else if (j === i) x.classList.add('wrong'); });
       if (ok) { right++; xp += 10 + streak * 2; streak++; } else streak = 0;
-      $('#qxp', view).textContent = `${xp} XP`; $('#qstreak', view).textContent = `🔥 Streak: ${streak}`;
-      $('#qfoot', card).innerHTML = `<div class="feedback ${ok ? 'ok' : 'bad'}">💡 ${d.fact}</div><button class="cta" style="margin-top:14px" id="qn">${q === QUIZ.length - 1 ? 'Finish' : 'Next →'}</button>`;
+      $('#qxp', view).textContent = `${xp} XP`; $('#qstreak', view).textContent = `Correct in a row: ${streak}`;
+      $('#qfoot', card).innerHTML = `<div class="feedback ${ok ? 'ok' : 'bad'}">${d.fact}</div><button class="cta learning-next" id="qn">${q === QUIZ.length - 1 ? 'Finish' : 'Continue'}</button>`;
       $('#qn', card).onclick = () => { q++; draw(); }; haptic();
     });
   };
@@ -74,11 +74,13 @@ export function quiz(view) {
 
 // ---------- PM2.5 video ----------
 export function video(view) {
-  view.innerHTML = `${head('PM2.5 Explained', `<span class="xp-pill">+${byId('pm25').xp} XP</span>`)}<div class="body">
+  view.innerHTML = `${head('PM2.5', `<span class="xp-pill">+${byId('pm25').xp} XP</span>`)}<div class="body">
+    <section class="learning-hero"><span class="learning-eyebrow">AIR QUALITY · LEARNING MODULE</span><h2>PM2.5, explained</h2>
+      <p>Learn how fine particles affect your lungs and what can help reduce exposure.</p></section>
     <div class="video"><iframe src="https://www.youtube-nocookie.com/embed/ltbx_Gb4x9w?rel=0&modestbranding=1&playsinline=1" title="PM2.5 explained" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
-    <div class="panel"><h3 style="color:var(--cyan)">Why this matters</h3><p>PM2.5 particles are 2.5 micrometers or smaller, small enough to travel deep into lung tissue. Repeated smoke exposure is linked to asthma attacks, COPD, heart problems and, over the long term, lung cancer.</p></div>
-    <div class="panel"><h3>⚠️ For firefighters</h3><p>Wildfire smoke can push PM2.5 far above the EPA's health-based standards. Respiratory protection, decon and limiting time in smoke are the biggest levers you control.</p></div>
-    <button class="cta" id="watched" disabled>Watch for 60 s to claim reward…</button></div>`;
+    <div class="panel"><h3>Why it matters</h3><p>PM2.5 particles are 2.5 micrometers or smaller, small enough to travel deep into lung tissue. Repeated smoke exposure is linked to asthma attacks, COPD, heart problems and, over the long term, lung cancer.</p></div>
+    <div class="panel"><h3>For firefighters</h3><p>Wildfire smoke can push PM2.5 far above the EPA's health-based standards. Respiratory protection, decontamination and limiting time in smoke are important ways to reduce exposure.</p></div>
+    <button class="cta" id="watched" disabled>Lesson unlocks in 60 seconds</button></div>`;
   const btn = $('#watched', view); let left = 60;
   const t = setInterval(() => { left--; btn.textContent = `Watch for ${left} s to claim reward…`; if (left <= 0) { clearInterval(t); btn.disabled = false; btn.textContent = 'I watched it, claim reward'; } }, 1000);
   btn.onclick = () => { const r = finish('pm25'); btn.outerHTML = rewardHTML(r); };
@@ -87,9 +89,9 @@ export function video(view) {
 
 // ---------- Safety Tips (visual) ----------
 export function tips(view) {
-  view.innerHTML = `${head('Safety Tips', `<span class="xp-pill">+${byId('tips').xp} XP</span>`)}<div class="body" style="max-width:900px">
+  view.innerHTML = `${head('Safety Tips', `<span class="xp-pill">+${byId('tips').xp} XP</span>`)}<div class="body learning-wide">
     <p class="note center">Swipe through all ${TIPS.length} cards</p>
-    <div class="tips" id="tipRail">${TIPS.map((t) => `<article class="tip ${t.who === 'Firefighters' ? 'ff' : ''}"><span class="who">${t.who}</span><div class="t-ico">${t.ico}</div><h3>${t.title}</h3><p>${t.text}</p></article>`).join('')}</div>
+    <div class="tips" id="tipRail">${TIPS.map((t, i) => `<article class="tip ${t.who === 'Firefighters' ? 'ff' : ''}"><span class="who">${t.who}</span><span class="tip-number">${String(i + 1).padStart(2, '0')}</span><h3>${t.title}</h3><p>${t.text}</p></article>`).join('')}</div>
     <div class="tip-dots">${TIPS.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>
     <div class="panel" style="margin-top:18px"><h3>SCBA vs. no protection</h3><div class="compare">
       <div class="no"><b>No protection</b>PM2.5 and toxic gases reach deep lung tissue. Repeated exposure adds up over a career.</div>

@@ -40,6 +40,7 @@ const view = $('#view');
 
 function route() {
   const path = location.hash.replace(/^#\/?/, '') || 'home';
+  document.body.classList.toggle('learning-mode', /^(learn\/lung|quiz|watch\/pm25|tips|breathe)$/.test(path));
   const s = store.get();
   const authed = s.signedIn || s.guest;
   const match = ROUTES.find(([re]) => re.test(path));
