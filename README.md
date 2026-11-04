@@ -52,7 +52,7 @@ Leaflet and Google Fonts load from a CDN; for an offline-proof build, download `
 
 ## Customizing
 - **New module/card:** add an entry in `js/data/modules.js`, then a view in `js/views/modules.js` and a route in `js/app.js`.
-- **Card images:** `www/assets/cards/*.jpg` are cropped from your Canva screenshot. Swap in the original, higher-res images (same file names).
+- **Card images:** The `img` paths in `www/js/data/modules.js` point to files in `www/assets/cards/`. Replace an image with the same filename, or update its `img` path when using a different filename or format.
 - **Shop items:** `SHOP` in `js/avatar.js`. Each item is a few lines of SVG.
 - **Colors/spacing:** the `:root` tokens at the top of `css/app.css`.
 

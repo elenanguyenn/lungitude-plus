@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="32" x2="650" y2="690" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#17243C"/>
+      <stop offset="1" stop-color="#090E1B"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="145" y1="110" x2="533" y2="598" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#627BA6" stop-opacity=".45"/>
+      <stop offset=".48" stop-color="#283650" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#1B263B" stop-opacity=".96"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="198" y1="232" x2="424" y2="473" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A9C6F4"/>
+      <stop offset="1" stop-color="#738FC8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="matrix(380 386 -306 302 238 74)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6889C5" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#6889C5" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="48" y="52" width="654" height="652" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" result="alpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"/>
+      <feOffset dy="18"/>
+      <feGaussianBlur stdDeviation="20"/>
+      <feComposite in2="alpha" operator="out"/>
+      <feColorMatrix values="0 0 0 0 0.01 0 0 0 0 0.02 0 0 0 0 0.06 0 0 0 .45 0"/>
+      <feBlend in2="BackgroundImageFix" result="shadow"/>
+      <feBlend in="SourceGraphic" in2="shadow" result="shape"/>
+    </filter>
+  </defs>
+  <rect width="720" height="720" rx="40" fill="url(#bg)"/>
+  <rect width="720" height="720" rx="40" fill="url(#glow)"/>
+  <path d="M0 566c113-80 225-104 330-73 115 34 214 27 390-40v267H0V566Z" fill="#121D31" fill-opacity=".72"/>
+  <g filter="url(#shadow)">
+    <g transform="rotate(-9 290 354)">
+      <rect x="131" y="111" width="345" height="505" rx="34" fill="#26354C" fill-opacity=".78" stroke="#B6C8E8" stroke-opacity=".16"/>
+      <rect x="148" y="128" width="345" height="505" rx="34" fill="url(#glass)" stroke="#D8E4FA" stroke-opacity=".3"/>
+      <rect x="148.5" y="128.5" width="344" height="504" rx="33.5" stroke="white" stroke-opacity=".08"/>
+      <text x="179" y="169" fill="#DCE6F7" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2.4">LUNGITUDE  /  FIELD GUIDE</text>
+      <rect x="179" y="192" width="282" height="198" rx="22" fill="#111B2E" fill-opacity=".55" stroke="#CAD9F1" stroke-opacity=".12"/>
+      <circle cx="320" cy="290" r="69" fill="#829DCF" fill-opacity=".12"/>
+      <path d="M320 233c-15 12-36 18-51 20v38c0 38 23 62 51 77 28-15 51-39 51-77v-38c-15-2-36-8-51-20Z" fill="url(#accent)" fill-opacity=".92"/>
+      <path d="M298 291l15 15 31-34" stroke="#132039" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="179" y="435" fill="#AEBFDC" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" letter-spacing="2.8">SMOKE SAFETY</text>
+      <text x="179" y="477" fill="#F2F5FB" font-family="Arial, Helvetica, sans-serif" font-size="35" font-weight="700" letter-spacing="-1.2">Breathe easier.</text>
+      <text x="179" y="505" fill="#C0CADD" font-family="Arial, Helvetica, sans-serif" font-size="15">Everyday ways to protect your lungs</text>
+      <rect x="179" y="540" width="282" height="1" fill="#D7E3F7" fill-opacity=".15"/>
+      <circle cx="193" cy="574" r="7" fill="#9EB9E8"/>
+      <path d="M209 574h127" stroke="#D2DDF0" stroke-opacity=".56" stroke-width="5" stroke-linecap="round"/>
+      <path d="M209 590h88" stroke="#D2DDF0" stroke-opacity=".22" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <g transform="rotate(8 526 405)">
+      <rect x="434" y="274" width="212" height="269" rx="26" fill="#33435E" fill-opacity=".86" stroke="#C9D8F3" stroke-opacity=".3"/>
+      <rect x="451" y="293" width="178" height="89" rx="17" fill="#9DB6E1" fill-opacity=".16"/>
+      <circle cx="486" cy="337" r="20" fill="#AFC4E9" fill-opacity=".18"/>
+      <path d="M476 339c0-7 5-12 11-12s11 5 11 12v8h-22v-8Zm4-13v-4h14v4" stroke="#C9D8F3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M520 324h82M520 340h62M520 356h72" stroke="#DCE5F5" stroke-opacity=".65" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="472" cy="416" r="8" fill="#90AEDF"/>
+      <path d="M493 416h108" stroke="#DCE5F5" stroke-opacity=".58" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="472" cy="455" r="8" fill="#90AEDF" fill-opacity=".62"/>
+      <path d="M493 455h91" stroke="#DCE5F5" stroke-opacity=".36" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="472" cy="494" r="8" fill="#90AEDF" fill-opacity=".38"/>
+      <path d="M493 494h101" stroke="#DCE5F5" stroke-opacity=".23" stroke-width="5" stroke-linecap="round"/>
+    </g>
+  </g>
+  <circle cx="110" cy="178" r="3" fill="#B7CCED" fill-opacity=".56"/>
+  <circle cx="598" cy="184" r="2" fill="#B7CCED" fill-opacity=".42"/>
+  <circle cx="105" cy="592" r="2" fill="#B7CCED" fill-opacity=".38"/>
+</svg>

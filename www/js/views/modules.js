@@ -88,19 +88,44 @@ export function video(view) {
 }
 
 // ---------- Safety Tips (visual) ----------
+const TIP_ICONS = [
+  '<path d="M24 42s14-13.2 14-24A14 14 0 1 0 10 18c0 10.8 14 24 14 24Z"/><circle cx="24" cy="18" r="4"/>',
+  '<path d="m6 22 18-15 18 15M11 20v20h26V20M20 40V27h8v13"/>',
+  '<path d="M8 20c0-6 7-10 16-10s16 4 16 10v12c-4 0-7 3-10 3h-4c-3 0-6-3-10-3H8V20Z"/><path d="M16 20h16M20 27h8"/>',
+  '<path d="m8 31 7-8 7 4 8-12"/><path d="m25 15 5-1 2 5M8 39h32"/>',
+  '<path d="M6 31h4l3-12h20l5 8h4v11H8a4 4 0 0 1-2-7Z"/><circle cx="15" cy="38" r="3"/><circle cx="34" cy="38" r="3"/><path d="M29 19v8h9"/>',
+  '<circle cx="17" cy="17" r="6"/><circle cx="33" cy="20" r="5"/><path d="M5 39c0-8 5-13 12-13s12 5 12 13M27 29c7-3 15 2 16 10"/>',
+  '<path d="M10 24c1-9 7-15 14-15s13 6 14 15v4H10v-4Z"/><path d="M7 28h34v5H7zM18 15h12M16 33v5h16v-5"/>',
+  '<path d="M13 8c0 4-4 6-4 10a5 5 0 0 0 10 0c0-4-4-6-4-10M31 8c0 4-4 6-4 10a5 5 0 0 0 10 0c0-4-4-6-4-10"/><path d="M12 30h24M16 36h16"/>',
+  '<path d="m15 8 9 5 9-5 8 7-5 7-4-3v20H16V19l-4 3-5-7 8-7Z"/><path d="M24 13v26"/>',
+  '<path d="M24 40s-15-9-15-21a7 7 0 0 1 13-4 7 7 0 0 1 13 4c0 12-11 19-11 19"/><path d="M17 25h5l3-6 4 12 3-6h4"/>',
+].map((path) => `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`);
+
 export function tips(view) {
-  view.innerHTML = `${head('Safety Tips', `<span class="xp-pill">+${byId('tips').xp} XP</span>`)}<div class="body learning-wide">
-    <p class="note center">Swipe through all ${TIPS.length} cards</p>
-    <div class="tips" id="tipRail">${TIPS.map((t, i) => `<article class="tip ${t.who === 'Firefighters' ? 'ff' : ''}"><span class="who">${t.who}</span><span class="tip-number">${String(i + 1).padStart(2, '0')}</span><h3>${t.title}</h3><p>${t.text}</p></article>`).join('')}</div>
-    <div class="tip-dots">${TIPS.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>
-    <div class="panel" style="margin-top:18px"><h3>SCBA vs. no protection</h3><div class="compare">
+  view.innerHTML = `${head('Safety Tips', `<span class="xp-pill">+${byId('tips').xp} XP</span>`)}<div class="body learning-wide safety-tips-page">
+    <section class="tips-intro">
+      <span class="tips-kicker">WILDFIRE SMOKE GUIDE</span>
+      <h2>Small steps.<br>Cleaner air.</h2>
+      <p>Practical ways to protect your lungs at home, outside, and on the fireground.</p>
+    </section>
+    <div class="tips-progress" aria-live="polite"><span>YOUR GUIDE</span><span id="tipProgress">01 <i>/ ${TIPS.length}</i></span></div>
+    <div class="tips-progress-track" aria-hidden="true"><i id="tipProgressBar"></i></div>
+    <div class="tips" id="tipRail" aria-label="Safety tips">${TIPS.map((t, i) => `<article class="tip ${t.who === 'Firefighters' ? 'ff' : ''}">
+      <div class="tip-top"><span class="tip-icon">${TIP_ICONS[i]}</span><span class="tip-count">${String(i + 1).padStart(2, '0')}</span></div>
+      <span class="who">${t.who === 'Firefighters' ? 'FIREFIGHTER HEALTH' : 'FOR EVERYONE'}</span><h3>${t.title}</h3><p>${t.text}</p>
+    </article>`).join('')}</div>
+    <p class="tips-swipe-hint">Swipe for the next tip <span aria-hidden="true">→</span></p>
+    <div class="panel tips-compare"><div class="tips-compare-heading"><span class="tips-kicker">FIREFIGHTER FOCUS</span><h3>SCBA vs. no protection</h3></div><div class="compare">
       <div class="no"><b>No protection</b>PM2.5 and toxic gases reach deep lung tissue. Repeated exposure adds up over a career.</div>
       <div class="yes"><b>With SCBA</b>Clean air from the tank, so particles <em>and</em> gases are kept out as long as the mask seals and stays on.</div></div></div>
     <button class="cta" id="tipDone" disabled>See every card to finish</button></div>`;
-  const rail = $('#tipRail', view), dots = $$('.tip-dots i', view), btn = $('#tipDone', view); const seen = new Set([0]);
+  const rail = $('#tipRail', view), progress = $('#tipProgress', view), progressBar = $('#tipProgressBar', view), btn = $('#tipDone', view); const seen = new Set([0]);
   rail.addEventListener('scroll', () => {
-    const i = Math.round(rail.scrollLeft / (rail.firstElementChild.offsetWidth + 14));
-    dots.forEach((d, j) => d.classList.toggle('on', j === i)); seen.add(i);
+    const gap = parseFloat(getComputedStyle(rail).columnGap) || 0;
+    const i = Math.max(0, Math.min(TIPS.length - 1, Math.round(rail.scrollLeft / (rail.firstElementChild.getBoundingClientRect().width + gap))));
+    progress.innerHTML = `${String(i + 1).padStart(2, '0')} <i>/ ${TIPS.length}</i>`;
+    progressBar.style.width = `${((i + 1) / TIPS.length) * 100}%`;
+    seen.add(i);
     if (rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 10) TIPS.forEach((_, j) => seen.add(j));
     if (seen.size >= TIPS.length && btn.disabled) { btn.disabled = false; btn.textContent = 'Got it, claim reward'; }
   }, { passive: true });
