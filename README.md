@@ -1,4 +1,5 @@
-# Lungitude+ v2: website + iOS app from one codebase
+# Lungitude+ v2: website + iOS app from one codebases
+
 
 ```
 www/            ← the whole app (HTML/CSS/JS, no build step). Website AND iOS app use this folder.
