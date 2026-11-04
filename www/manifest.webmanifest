@@ -1,0 +1,12 @@
+{
+  "name": "Lungitude+",
+  "short_name": "Lungitude+",
+  "start_url": "./#/home",
+  "display": "standalone",
+  "background_color": "#05051c",
+  "theme_color": "#05051c",
+  "icons": [
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

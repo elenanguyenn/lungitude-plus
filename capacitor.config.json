@@ -1,0 +1,6 @@
+{
+  "appId": "com.lungitude.plus",
+  "appName": "Lungitude+",
+  "webDir": "www",
+  "ios": { "contentInset": "never", "backgroundColor": "#05051c" }
+}
