@@ -30,11 +30,29 @@ const FIRE_ZONES = [
 
 let stations = [], live = false, me = null;
 
+async function airnowDirect() {
+  const pad = (n) => String(n).padStart(2, '0'); const b = CONFIG.BBOX;
+  for (let back = 1; back <= 3; back++) {
+    const t = new Date(Date.now() - back * 3600e3);
+    const hour = `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}T${pad(t.getUTCHours())}`;
+    const url = `https://www.airnowapi.org/aq/data/?startDate=${hour}&endDate=${hour}&parameters=PM25&BBOX=${b.minLng},${b.minLat},${b.maxLng},${b.maxLat}&dataType=B&format=application/json&verbose=1&monitorType=2&includerawconcentrations=0&API_KEY=${CONFIG.AIRNOW_API_KEY}`;
+    const rows = await (await fetch(url, { signal: AbortSignal.timeout(12000) })).json();
+    const stations = (Array.isArray(rows) ? rows : []).filter((s) => s.Parameter === 'PM2.5' && s.Value >= 0)
+      .map((s) => ({ name: s.SiteName, lat: s.Latitude, lng: s.Longitude, pm25: Math.round(s.Value * 10) / 10, aqi: s.AQI >= 0 ? s.AQI : null, agency: s.AgencyName, updated: `${s.UTC}:00Z` }));
+    if (stations.length) return { stations };
+  }
+  throw new Error('no data');
+}
+
 async function loadStations() {
   try {
-    const res = await fetch(`${CONFIG.API_BASE}/api/air`, { signal: AbortSignal.timeout(12000) });
-    if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
+    let data;
+    if (CONFIG.AIRNOW_API_KEY) data = await airnowDirect();
+    else {
+      const res = await fetch(`${CONFIG.API_BASE}/api/air`, { signal: AbortSignal.timeout(12000) });
+      if (!res.ok) throw new Error(res.status);
+      data = await res.json();
+    }
     if (!Array.isArray(data.stations) || !data.stations.length) throw new Error('empty');
     live = true;
     return data.stations;
@@ -54,7 +72,7 @@ export function render(view) {
       </form>
       <div class="suggest" id="sug" hidden></div>
       <div class="map-chips" id="chips">
-        <button class="map-chip on" data-layer="haze">${icons.wind} Smoke haze</button>
+        <button class="map-chip" data-layer="haze">${icons.wind} Heat view</button>
         <button class="map-chip on" data-layer="dots">${icons.pin} Monitors</button>
         <button class="map-chip" data-layer="fire">${icons.fire} Fire-risk areas</button>
         <button class="map-chip" data-sort="worst">Worst first</button>
@@ -79,11 +97,12 @@ export function render(view) {
   }
   const L = window.L;
   const m = L.map($('#pmMap', view), { center: CONFIG.MAP_CENTER, zoom: CONFIG.MAP_ZOOM, zoomControl: false, attributionControl: true, minZoom: 6 });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 18, subdomains: 'abcd', attribution: '© OpenStreetMap © CARTO · Data: EPA AirNow',
+  // Standard light street map (Google-Maps-style look). No key needed.
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OpenStreetMap contributors · Data: U.S. EPA AirNow',
   }).addTo(m);
   m.createPane('haze').classList.add('haze-pane'); m.getPane('haze').style.zIndex = 350;
-  const haze = L.layerGroup().addTo(m), dots = L.layerGroup().addTo(m), fire = L.layerGroup();
+  const haze = L.layerGroup(), dots = L.layerGroup().addTo(m), fire = L.layerGroup();
   FIRE_ZONES.forEach(([name, coords]) => L.polygon(coords, { color: '#ff5722', weight: 1.5, dashArray: '6 5', fillOpacity: 0.12 })
     .bindTooltip(`${name}<br><small>Illustrative high fire-risk area</small>`).addTo(fire));
   let meMarker = null, selected = null, sortWorst = false;
@@ -92,9 +111,10 @@ export function render(view) {
   const draw = () => {
     haze.clearLayers(); dots.clearLayers(); markers.clear();
     stations.forEach((s) => {
-      L.circle([s.lat, s.lng], { pane: 'haze', radius: 9000 + s.aqi * 90, stroke: false, fillColor: s.cat.color, fillOpacity: 0.55 }).addTo(haze);
-      const size = 30;
-      const icon = L.divIcon({ className: '', iconSize: [size, size], html: `<div class="pm-dot" style="width:${size}px;height:${size}px;background:${s.cat.color};color:${s.cat.ink}">${s.aqi}</div>` });
+      L.circle([s.lat, s.lng], { pane: 'haze', radius: 7000 + s.aqi * 60, stroke: false, fillColor: s.cat.color, fillOpacity: 0.25 }).addTo(haze);
+      // Google-Maps-style teardrop pin with the AQI number inside
+      const icon = L.divIcon({ className: '', iconSize: [34, 44], iconAnchor: [17, 42],
+        html: `<div class="pm-pin" style="--c:${s.cat.color};color:${s.cat.ink}"><span>${s.aqi}</span></div>` });
       const mk = L.marker([s.lat, s.lng], { icon, title: `${s.name}: AQI ${s.aqi}`, keyboard: true }).on('click', () => select(s, true)).addTo(dots);
       markers.set(s, mk);
     });
@@ -111,10 +131,10 @@ export function render(view) {
   const drawRail = () => {
     $('#rail', view).innerHTML = ordered().slice(0, 15).map((s, i) => `
       <button class="scard" data-i="${stations.indexOf(s)}">
-        <div class="band" style="background:linear-gradient(135deg, ${s.cat.color}, ${s.cat.color}aa)">
+        <div class="band" style="background:${s.cat.color}">
           ${i === 0 && me && !sortWorst ? '<span class="tag">Nearest</span>' : ''}
           <span class="big" style="color:${s.cat.ink}">${s.aqi}<small>AQI</small></span></div>
-        <div class="inner"><h3>${esc(s.name)}</h3><div class="cat" style="color:${s.cat.key === 'moderate' ? '#8a7f00' : s.cat.color}">${s.cat.name}</div>
+        <div class="inner"><h3>${esc(s.name)}</h3><div class="cat" style="color:${s.cat.key === 'moderate' ? '#8a6500' : s.cat.color}">${s.cat.name}</div>
           <div class="row">${icons.wind}${s.pm25} µg/m³ PM2.5${me ? ` · ${distKm(me, s).toFixed(1)} km away` : ''}</div>
           <div class="row">${icons.clock}${s.updated ? `Updated ${new Date(s.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Sample reading'}</div></div>
       </button>`).join('');
@@ -123,8 +143,8 @@ export function render(view) {
 
   const select = (s, open) => {
     selected = s; haptic();
-    $$('.pm-dot', view).forEach((d) => d.classList.remove('sel'));
-    markers.get(s)?.getElement()?.querySelector('.pm-dot')?.classList.add('sel');
+    $$('.pm-pin', view).forEach((d) => d.classList.remove('sel'));
+    markers.get(s)?.getElement()?.querySelector('.pm-pin')?.classList.add('sel');
     $$('.scard', view).forEach((c) => c.classList.toggle('sel', stations[+c.dataset.i] === s));
     $(`.scard[data-i="${stations.indexOf(s)}"]`, view)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     m.flyTo([s.lat, s.lng], Math.max(m.getZoom(), 10), { duration: 0.6 });

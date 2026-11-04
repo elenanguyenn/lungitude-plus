@@ -621,3 +621,25 @@ body.full-bleed #view { padding-bottom: 0; }
 [hidden] { display: none !important; }
 .search { min-width: 0; }
 .coin-ico { width: 1em; height: 1em; flex: none; vertical-align: -0.15em; }
+
+/* ---------- Map: Google-Maps-style light theme ---------- */
+#pmMap { background: #e5e3df; }
+.pm-pin {
+  position: relative; width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: var(--c); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); transition: transform .15s;
+}
+.pm-pin span { position: absolute; inset: 0; display: grid; place-items: center; transform: rotate(45deg); font-size: 12px; font-weight: 700; font-family: Roboto, Arial, sans-serif; }
+.pm-pin.sel { transform: rotate(-45deg) scale(1.25); box-shadow: 0 0 0 3px #1a73e8, 0 2px 8px rgba(0, 0, 0, .4); }
+.map-chip { background: #fff; color: #3c4043; border: 1px solid #dadce0; box-shadow: 0 1px 3px rgba(0,0,0,.2); backdrop-filter: none; font-family: Roboto, Arial, sans-serif; }
+.map-chip.on { background: #e8f0fe; color: #1967d2; border-color: #d2e3fc; }
+.status-pill { background: #fff; color: #3c4043; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.fab { border-radius: 50%; color: #5f6368; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.map-search { border-radius: 24px; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.map-search svg { color: #5f6368; }
+.legend { background: #fff; color: #3c4043; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.haze-pane { filter: blur(14px); opacity: .7; }
+.scard { border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.scard .band { height: 60px; }
+.scard .band .tag { background: #fff; color: #1a73e8; }
+.scard .inner h3 { font-size: 18px; }
+.leaflet-control-attribution { font-size: 10px; }
