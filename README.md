@@ -53,6 +53,7 @@ Leaflet and Google Fonts load from a CDN; for an offline-proof build, download `
 ## Customizing
 - **New module/card:** add an entry in `js/data/modules.js`, then a view in `js/views/modules.js` and a route in `js/app.js`.
 - **Card images:** The `img` paths in `www/js/data/modules.js` point to files in `www/assets/cards/`. Replace an image with the same filename, or update its `img` path when using a different filename or format.
+- **Quiz and breathing card photos:** `quiz-smoke.jpg` is by Magpieturtle, from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Canada_wildfire_smoke_on_June_7,_2023,_on_Pleasant_Hill_Road_in_Flanders,_NJ.jpg), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). `breathe-meditation.jpg` is from [Unsplash](https://images.unsplash.com/photo-1506126613408-eca07ce68773).
 - **Shop items:** `SHOP` in `js/avatar.js`. Each item is a few lines of SVG.
 - **Colors/spacing:** the `:root` tokens at the top of `css/app.css`.
 

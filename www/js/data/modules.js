@@ -10,9 +10,9 @@ export const MODULES = [
     keywords: 'video particulate matter explained' },
   { id: 'tips',    title: 'Safety Tips',        kind: 'Visual only', type: 'Visual',      xp: 100,  coins: 10, img: 'assets/cards/tips.svg',   route: '#/tips',
     keywords: 'n95 hepa filter decon scba firefighter' },
-  { id: 'quiz',    title: 'Smoke Shield Quiz',  kind: 'Quiz',        type: 'Interactive', xp: 500,  coins: 40, emoji: '🛡️', tint: 'linear-gradient(135deg,#ffe0ec,#d7f2ff)', route: '#/quiz',
+  { id: 'quiz',    title: 'Smoke Shield Quiz',  kind: 'Quiz',        type: 'Interactive', xp: 500,  coins: 40, img: 'assets/cards/quiz-smoke.jpg', route: '#/quiz',
     keywords: 'quiz aqi test streak' },
-  { id: 'breathe', title: 'Breathing Coach',    kind: 'Practice',    type: 'Practice',    xp: 150,  coins: 15, emoji: '🫁', tint: 'linear-gradient(135deg,#d7f2ff,#e8e2ff)', route: '#/breathe',
+  { id: 'breathe', title: 'Breathing Coach',    kind: 'Practice',    type: 'Practice',    xp: 150,  coins: 15, img: 'assets/cards/breathe-meditation.jpg', route: '#/breathe',
     keywords: 'box breathing calm relax' },
 ];
 

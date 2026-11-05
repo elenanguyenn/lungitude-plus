@@ -42,29 +42,50 @@ export function lesson(view) {
 
 // ---------- Smoke Shield Quiz ----------
 export function quiz(view) {
-  let q = 0, xp = 0, streak = 0, right = 0;
+  let q = 0, xp = 0, streak = 0, bestStreak = 0, right = 0;
   view.innerHTML = `${head('Smoke Shield Quiz', '<span class="xp-pill" id="qxp">0 XP</span>')}
-    <div class="body"><div class="progress"><i id="qbar"></i></div><p class="learning-streak" id="qstreak">Correct in a row: 0</p><div id="qcard"></div></div>`;
+    <div class="body learning-wide quiz-page">
+      <section class="tips-intro quiz-intro">
+        <span class="tips-kicker">AIR QUALITY · KNOWLEDGE CHECK</span>
+        <h2>How strong is<br>your smoke shield?</h2>
+        <p>${QUIZ.length} quick questions to build your wildfire-smoke know-how.</p>
+      </section>
+      <div class="quiz-progress-copy"><span>YOUR PROGRESS</span><span id="qcount">01 <i>/ ${String(QUIZ.length).padStart(2, '0')}</i></span></div>
+      <div class="progress quiz-progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="${QUIZ.length}" aria-valuenow="0"><i id="qbar"></i></div>
+      <div id="qcard" aria-live="polite"></div>
+      <p class="quiz-streak" id="qstreak">Best streak <strong>0</strong></p>
+    </div>`;
   const card = $('#qcard', view);
   const draw = () => {
     if (q >= QUIZ.length) {
       store.update((s) => { s.stats.quizBest = Math.max(s.stats.quizBest, right); });
       const r = finish('quiz', right / QUIZ.length);
       $('#qbar', view).style.width = '100%';
-      card.innerHTML = `<div class="panel center reveal"><h2>Quiz complete</h2><p>${right} / ${QUIZ.length} correct · best streak counts.</p>${rewardHTML(r)}
+      $('.quiz-progress', view).setAttribute('aria-valuenow', String(QUIZ.length));
+      $('#qcount', view).innerHTML = `${String(QUIZ.length).padStart(2, '0')} <i>/ ${String(QUIZ.length).padStart(2, '0')}</i>`;
+      card.innerHTML = `<div class="panel quiz-result center reveal"><span class="tips-kicker">SHIELD CHECK COMPLETE</span><h2>Nice work.</h2><p>${right} of ${QUIZ.length} correct · best streak ${bestStreak}.</p>${rewardHTML(r)}
         <div class="btn-row"><button class="cta ghost" id="again">Try again</button><a class="cta" href="#/breathe">Breathing Coach →</a></div></div>`;
-      $('#again', card).onclick = () => { q = xp = streak = right = 0; draw(); };
+      $('#again', card).onclick = () => { q = xp = streak = bestStreak = right = 0; draw(); };
       return;
     }
     const d = QUIZ[q];
+    const progress = $('.quiz-progress', view);
+    progress.setAttribute('aria-valuenow', String(q));
+    $('#qcount', view).innerHTML = `${String(q + 1).padStart(2, '0')} <i>/ ${String(QUIZ.length).padStart(2, '0')}</i>`;
     $('#qbar', view).style.width = `${(q / QUIZ.length) * 100}%`;
-    card.innerHTML = `<div class="panel reveal"><div class="learning-question-count">Question ${q + 1} of ${QUIZ.length}</div>
-      <h3 style="line-height:1.45">${d.q}</h3><div class="choices">${d.choices.map((c, i) => `<button class="choice" data-i="${i}">${c}</button>`).join('')}</div><div id="qfoot"></div></div>`;
+    $('#qstreak strong', view).textContent = String(bestStreak);
+    card.innerHTML = `<div class="panel quiz-question reveal">
+      <div class="learning-question-count">QUESTION ${String(q + 1).padStart(2, '0')}</div>
+      <h3>${d.q}</h3>
+      <div class="choices">${d.choices.map((c, i) => `<button class="choice quiz-choice" data-i="${i}"><span class="quiz-choice-letter">${String.fromCharCode(65 + i)}</span><span>${c}</span></button>`).join('')}</div>
+      <div id="qfoot"></div></div>`;
     $$('.choice', card).forEach((b) => b.onclick = () => {
       const i = +b.dataset.i, ok = i === d.answer;
       $$('.choice', card).forEach((x, j) => { x.disabled = true; if (j === d.answer) x.classList.add('correct'); else if (j === i) x.classList.add('wrong'); });
-      if (ok) { right++; xp += 10 + streak * 2; streak++; } else streak = 0;
-      $('#qxp', view).textContent = `${xp} XP`; $('#qstreak', view).textContent = `Correct in a row: ${streak}`;
+      if (ok) { right++; xp += 10 + streak * 2; streak++; bestStreak = Math.max(bestStreak, streak); } else streak = 0;
+      progress.setAttribute('aria-valuenow', String(q + 1));
+      $('#qbar', view).style.width = `${((q + 1) / QUIZ.length) * 100}%`;
+      $('#qxp', view).textContent = `${xp} XP`; $('#qstreak strong', view).textContent = String(bestStreak);
       $('#qfoot', card).innerHTML = `<div class="feedback ${ok ? 'ok' : 'bad'}">${d.fact}</div><button class="cta learning-next" id="qn">${q === QUIZ.length - 1 ? 'Finish' : 'Continue'}</button>`;
       $('#qn', card).onclick = () => { q++; draw(); }; haptic();
     });
@@ -134,34 +155,56 @@ export function tips(view) {
 
 // ---------- Breathing Coach ----------
 export function breathe(view) {
-  const P = [['Inhale', 'Breathe in slowly through your nose', 1.4], ['Hold', 'Hold gently', 1.4], ['Exhale', 'Breathe out slowly through your mouth', 1], ['Hold', 'Rest before the next breath', 1]];
-  view.innerHTML = `${head('Breathing Coach', `<span class="xp-pill" id="sess">${store.get().stats.breathSessions} sessions</span>`)}
-    <div class="body breathe"><p class="note">Box breathing · 4-4-4-4 · practice indoors on smoky days</p>
-    <div class="orb-wrap"><div class="ring"></div><div class="ring mid"></div><div class="orb" id="orb">4</div></div>
-    <h2 id="ph" style="margin:0">Tap start</h2><p class="note" id="pd">4 rounds = 1 session · a calming routine</p>
-    <button class="cta" id="go" style="max-width:240px">Start</button><div class="dots">${'<i></i>'.repeat(4)}</div></div>`;
+  const P = [['Inhale', 'Breathe in slowly through your nose', 1.35], ['Hold', 'Pause gently, without straining', 1.35], ['Exhale', 'Breathe out slowly through your mouth', 1], ['Rest', 'Let your breath settle', 1]];
+  const sessionLabel = (count) => `${count} ${count === 1 ? 'session' : 'sessions'}`;
+  view.innerHTML = `${head('Breathing Coach', `<span class="xp-pill" id="sess">${sessionLabel(store.get().stats.breathSessions)}</span>`)}
+    <div class="body learning-wide breathe-page">
+      <section class="tips-intro breathe-intro">
+        <span class="tips-kicker">A MOMENT TO RESET</span>
+        <h2>Find your<br>steady.</h2>
+        <p>A short, gentle breathing rhythm for a quiet moment indoors.</p>
+      </section>
+      <section class="breathe-session">
+        <div class="breathe-session-head"><span>GUIDED BREATHING</span><span>ABOUT 1 MIN</span></div>
+        <div class="orb-wrap" aria-hidden="true"><div class="ring"></div><div class="ring mid"></div><div class="orb" id="orb">4</div></div>
+        <div class="breathe-phase" id="ph" aria-live="polite">Ready when you are</div>
+        <p class="breathe-cue" id="pd">Follow the gentle pace. No need to force a deep breath.</p>
+        <div class="breathe-rounds" aria-label="Four rounds">
+          ${'<span class="breathe-round"></span>'.repeat(4)}
+        </div>
+        <button class="cta breathe-start" id="go">Begin session</button>
+      </section>
+      <p class="breathe-note">If a pause feels uncomfortable or you feel light-headed, stop and breathe normally.</p>
+    </div>`;
   let timer = null, phase = 0, count = 4, round = 0;
-  const orb = $('#orb', view), rings = $$('.ring', view), go = $('#go', view), dots = $$('.dots i', view);
+  const orb = $('#orb', view), rings = $$('.ring', view), go = $('#go', view), dots = $$('.breathe-round', view);
   const paint = () => { const [n, d, sc] = P[phase]; $('#ph', view).textContent = n; $('#pd', view).textContent = d; orb.textContent = count; orb.style.transform = `scale(${sc})`; rings.forEach((r) => r.style.transform = `scale(${sc === 1 ? 1 : 1.25})`); };
-  const stop = () => { clearInterval(timer); timer = null; go.textContent = 'Start'; orb.style.transform = 'scale(1)'; $('#ph', view).textContent = 'Tap start'; };
+  const stop = () => {
+    clearInterval(timer); timer = null; go.textContent = 'Begin session';
+    orb.style.transform = 'scale(1)'; rings.forEach((r) => { r.style.transform = 'scale(1)'; });
+    $('#ph', view).textContent = 'Ready when you are'; $('#pd', view).textContent = 'Follow the gentle pace. No need to force a deep breath.';
+  };
   go.onclick = () => {
     if (timer) return stop();
-    phase = 0; count = 4; round = 0; dots.forEach((d) => d.classList.remove('on')); go.textContent = 'Stop'; paint();
+    phase = 0; count = 4; round = 0; dots.forEach((d) => d.classList.remove('on')); go.textContent = 'End session'; paint();
     timer = setInterval(() => {
       if (--count > 0) { orb.textContent = count; return; }
       phase = (phase + 1) % 4; count = 4;
       if (phase === 0) {
         dots[round]?.classList.add('on'); round++;
         if (round >= 4) {
-          stop(); store.update((s) => { s.stats.breathSessions++; });
-          $('#sess', view).textContent = `${store.get().stats.breathSessions} sessions`;
-          const r = finish('breathe'); $('#pd', view).innerHTML = `Session complete! +${r.xp} XP`; return;
+          clearInterval(timer); timer = null; go.textContent = 'Begin again';
+          store.update((s) => { s.stats.breathSessions++; });
+          $('#sess', view).textContent = sessionLabel(store.get().stats.breathSessions);
+          const r = finish('breathe'); $('#ph', view).textContent = 'Session complete';
+          $('#pd', view).textContent = `Your minute is complete. +${r.xp} XP earned.`; orb.textContent = '✓';
+          orb.style.transform = 'scale(1)'; rings.forEach((ring) => { ring.style.transform = 'scale(1)'; }); return;
         }
       }
       paint();
     }, 1000);
   };
-  return stop;
+  return () => { clearInterval(timer); timer = null; };
 }
 
 // ---------- Firefighter Frenzy ----------

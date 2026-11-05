@@ -72,7 +72,7 @@ function boot() {
   splash.innerHTML = '<div class="wordmark">lungitude<b>+</b></div>';
   document.body.appendChild(splash);
   route();
-  setTimeout(() => { splash.style.opacity = '0'; }, 1500);
+  setTimeout(() => splash.classList.add('is-hiding'), 1500);
   setTimeout(() => splash.remove(), 2100);
 }
 boot();
