@@ -801,7 +801,12 @@ body.full-bleed #view { padding-bottom: 0; }
   flex: none; width: min(78vw, 330px); scroll-snap-align: center; background: #fff; color: #1d1d2b; border-radius: 18px;
   box-shadow: 0 8px 26px rgba(0, 0, 0, .35); overflow: hidden; text-align: left; border: 3px solid transparent;
 }
+.station-empty {
+  flex: none; width: min(78vw, 330px); padding: 18px; border-radius: 14px; background: #fff; color: #4a4a5c;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .25); font-size: 14px; line-height: 1.5;
+}
 @media (min-width: 900px) { .scard { width: 100%; } }
+@media (min-width: 900px) { .station-empty { width: 100%; } }
 .scard.sel { border-color: var(--neon-cyan); }
 .scard .band { height: 74px; position: relative; display: flex; align-items: flex-end; padding: 10px 14px; }
 .scard .band .tag { position: absolute; left: 14px; top: 12px; padding: 4px 12px; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 600; background: linear-gradient(90deg, #11998e, #38ef7d); }

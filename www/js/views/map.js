@@ -30,33 +30,17 @@ const FIRE_ZONES = [
 
 let stations = [], live = false, me = null;
 
-async function airnowDirect() {
-  const pad = (n) => String(n).padStart(2, '0'); const b = CONFIG.BBOX;
-  for (let back = 1; back <= 3; back++) {
-    const t = new Date(Date.now() - back * 3600e3);
-    const hour = `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}T${pad(t.getUTCHours())}`;
-    const url = `https://www.airnowapi.org/aq/data/?startDate=${hour}&endDate=${hour}&parameters=PM25&BBOX=${b.minLng},${b.minLat},${b.maxLng},${b.maxLat}&dataType=B&format=application/json&verbose=1&monitorType=2&includerawconcentrations=0&API_KEY=${CONFIG.AIRNOW_API_KEY}`;
-    const rows = await (await fetch(url, { signal: AbortSignal.timeout(12000) })).json();
-    const stations = (Array.isArray(rows) ? rows : []).filter((s) => s.Parameter === 'PM2.5' && s.Value >= 0)
-      .map((s) => ({ name: s.SiteName, lat: s.Latitude, lng: s.Longitude, pm25: Math.round(s.Value * 10) / 10, aqi: s.AQI >= 0 ? s.AQI : null, agency: s.AgencyName, updated: `${s.UTC}:00Z` }));
-    if (stations.length) return { stations };
-  }
-  throw new Error('no data');
-}
+const supportedArea = ({ lat, lng }) => lat >= 17 && lat <= 72 && lng >= -180 && lng <= -64;
+const isSampleArea = ({ lat, lng }) => lat >= CONFIG.BBOX.minLat && lat <= CONFIG.BBOX.maxLat
+  && lng >= CONFIG.BBOX.minLng && lng <= CONFIG.BBOX.maxLng;
 
-async function loadStations() {
-  try {
-    let data;
-    if (CONFIG.AIRNOW_API_KEY) data = await airnowDirect();
-    else {
-      const res = await fetch(`${CONFIG.API_BASE}/api/air`, { signal: AbortSignal.timeout(12000) });
-      if (!res.ok) throw new Error(res.status);
-      data = await res.json();
-    }
-    if (!Array.isArray(data.stations) || !data.stations.length) throw new Error('empty');
-    live = true;
-    return data.stations;
-  } catch { live = false; return SAMPLE; }
+async function loadStations(center) {
+  const params = new URLSearchParams({ lat: center.lat.toFixed(1), lng: center.lng.toFixed(1) });
+  const res = await fetch(`${CONFIG.API_BASE}/api/air?${params}`, { signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`AirNow request failed (${res.status})`);
+  const data = await res.json();
+  if (!Array.isArray(data.stations) || !data.stations.length) throw new Error('No nearby AirNow monitors');
+  return data.stations;
 }
 
 const enrich = (s) => { const aqi = s.aqi ?? pmToAqi(s.pm25); return { ...s, aqi, cat: category(aqi) }; };
@@ -64,10 +48,10 @@ const enrich = (s) => { const aqi = s.aqi ?? pmToAqi(s.pm25); return { ...s, aqi
 export function render(view) {
   view.innerHTML = `
   <div class="map-page">
-    <div id="pmMap" role="application" aria-label="PM2.5 map of Southern California"></div>
+    <div id="pmMap" role="application" aria-label="PM2.5 map of the United States"></div>
     <div class="map-top">
       <form class="map-search" id="msForm" role="search">${icons.pin}
-        <input id="ms" placeholder="Search a city or ZIP in SoCal" autocomplete="off" aria-label="Search places">
+        <input id="ms" placeholder="Search a U.S. city or ZIP code" autocomplete="off" aria-label="Search places">
         <button type="button" class="clear" id="msClear" aria-label="Clear search" hidden>${icons.closeCircle}</button>
       </form>
       <div class="suggest" id="sug" hidden></div>
@@ -96,7 +80,7 @@ export function render(view) {
     return;
   }
   const L = window.L;
-  const m = L.map($('#pmMap', view), { center: CONFIG.MAP_CENTER, zoom: CONFIG.MAP_ZOOM, zoomControl: false, attributionControl: true, minZoom: 6 });
+  const m = L.map($('#pmMap', view), { center: CONFIG.MAP_CENTER, zoom: CONFIG.MAP_ZOOM, zoomControl: false, attributionControl: true, minZoom: 3 });
   // Standard light street map (Google-Maps-style look). No key needed.
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '© OpenStreetMap contributors · Data: U.S. EPA AirNow',
@@ -129,13 +113,18 @@ export function render(view) {
   };
 
   const drawRail = () => {
-    $('#rail', view).innerHTML = ordered().slice(0, 15).map((s, i) => `
+    const list = ordered().slice(0, 15);
+    if (!list.length) {
+      $('#rail', view).innerHTML = '<div class="station-empty">No nearby AirNow monitors found. Try another U.S. location or refresh later.</div>';
+      return;
+    }
+    $('#rail', view).innerHTML = list.map((s, i) => `
       <button class="scard" data-i="${stations.indexOf(s)}">
         <div class="band" style="background:${s.cat.color}">
-          ${i === 0 && me && !sortWorst ? '<span class="tag">Nearest</span>' : ''}
+          ${i === 0 && !sortWorst ? '<span class="tag">Nearest monitor</span>' : ''}
           <span class="big" style="color:${s.cat.ink}">${s.aqi}<small>AQI</small></span></div>
         <div class="inner"><h3>${esc(s.name)}</h3><div class="cat" style="color:${s.cat.key === 'moderate' ? '#8a6500' : s.cat.color}">${s.cat.name}</div>
-          <div class="row">${icons.wind}${s.pm25} µg/m³ PM2.5${me ? ` · ${distKm(me, s).toFixed(1)} km away` : ''}</div>
+          <div class="row">${icons.wind}${s.pm25} µg/m³ PM2.5 · ${distKm(me || m.getCenter(), s).toFixed(1)} km away</div>
           <div class="row">${icons.clock}${s.updated ? `Updated ${new Date(s.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Sample reading'}</div></div>
       </button>`).join('');
     $$('.scard', view).forEach((b) => { b.onclick = () => select(stations[+b.dataset.i], true); b.classList.toggle('sel', stations[+b.dataset.i] === selected); });
@@ -155,6 +144,7 @@ export function render(view) {
     const pct = Math.min(1, s.aqi / 300);
     openSheet(`
       <h2>${esc(s.name)}</h2><div class="note" style="color:#6b6b7a">${esc(s.note || s.agency || '')}${s.updated ? ` · ${new Date(s.updated).toLocaleString()}` : ' · Sample data'}</div>
+      <div class="note">${live ? 'Nearest reporting monitor' : 'Nearest sample location'} · ${distKm(me || m.getCenter(), s).toFixed(1)} km from the selected location. This reading may not represent air quality at your exact address.</div>
       <div class="aqi-gauge">
         <svg class="aqi-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" stroke="#eceef5" stroke-width="10" fill="none"/>
           <circle cx="50" cy="50" r="42" stroke="${s.cat.color}" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="${pct * 264} 264" transform="rotate(-90 50 50)"/>
@@ -171,14 +161,40 @@ export function render(view) {
     sessionStorage.setItem('lungitude.nearest', JSON.stringify({ name: s.name, aqi: s.aqi, category: s.cat.name, pm25: s.pm25, live }));
   };
 
-  const load = async () => {
-    $('#status', view).className = 'status-pill'; $('#status span', view).textContent = 'Loading…';
-    stations = (await loadStations()).map(enrich);
-    $('#status', view).className = `status-pill ${live ? 'live' : ''}`;
-    $('#status span', view).textContent = live ? `Live · AirNow · ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Sample data';
+  let loadId = 0, lastRequestedCenter = null, moveTimer;
+  const load = async (center = m.getCenter(), force = false) => {
+    if (!supportedArea(center)) {
+      loadId++;
+      lastRequestedCenter = null;
+      live = false;
+      stations = [];
+      $('#status', view).className = 'status-pill';
+      $('#status span', view).textContent = 'AirNow data is available for U.S. locations';
+      draw();
+      return;
+    }
+    if (!force && lastRequestedCenter && distKm(lastRequestedCenter, center) < 80) return;
+    lastRequestedCenter = { lat: center.lat, lng: center.lng };
+    const requestId = ++loadId;
+    $('#status', view).className = 'status-pill';
+    $('#status span', view).textContent = 'Loading nearby monitors…';
+    try {
+      const loaded = await loadStations(center);
+      if (requestId !== loadId) return;
+      stations = loaded.map(enrich);
+      live = true;
+      $('#status', view).className = 'status-pill live';
+      $('#status span', view).textContent = `Live · AirNow · ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+    } catch {
+      if (requestId !== loadId) return;
+      live = false;
+      stations = isSampleArea(center) ? SAMPLE.map(enrich) : [];
+      $('#status', view).className = 'status-pill';
+      $('#status span', view).textContent = stations.length ? 'Sample data · AirNow unavailable' : 'No nearby AirNow data';
+    }
     draw();
   };
-  load();
+  load(m.getCenter(), true);
 
   // Layer chips
   $$('#chips .map-chip', view).forEach((b) => b.onclick = () => {
@@ -187,7 +203,7 @@ export function render(view) {
     const on = m.hasLayer(layer); on ? m.removeLayer(layer) : layer.addTo(m); b.classList.toggle('on', !on);
   });
   $('#legendBtn', view).onclick = () => $('#legend', view).classList.toggle('open');
-  $('#refresh', view).onclick = () => load();
+  $('#refresh', view).onclick = () => load(m.getCenter(), true);
 
   // Locate me → nearest monitor
   $('#locate', view).onclick = () => {
@@ -200,12 +216,11 @@ export function render(view) {
       meMarker?.remove();
       meMarker = L.marker([me.lat, me.lng], { icon: L.divIcon({ className: '', html: '<div class="me-dot"></div>', iconSize: [18, 18] }), zIndexOffset: 1000 }).addTo(m);
       drawRail();
-      const near = ordered()[0];
-      if (near && distKm(me, near) < 80) select(near, true); else { m.flyTo([me.lat, me.lng], 10); toast('No monitor nearby. Lungitude+ covers Southern California'); }
+      m.flyTo([me.lat, me.lng], 10);
     }, () => { btn.classList.remove('spin'); toast('Location permission was denied'); }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
   };
 
-  // Search: station names first, then OpenStreetMap place search inside SoCal
+  // Search station names first, then any U.S. place.
   const inp = $('#ms', view), sug = $('#sug', view), clr = $('#msClear', view);
   let deb;
   inp.oninput = () => {
@@ -216,28 +231,35 @@ export function render(view) {
     showSug(local, []);
     if (q.length >= 3) deb = setTimeout(async () => {
       try {
-        const b = CONFIG.BBOX;
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=4&countrycodes=us&bounded=1&viewbox=${b.minLng},${b.maxLat},${b.maxLng},${b.minLat}&q=${encodeURIComponent(inp.value)}`;
-        const places = await (await fetch(url, { headers: { 'Accept-Language': 'en' } })).json();
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=4&countrycodes=us&q=${encodeURIComponent(inp.value)}`;
+        const response = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        if (!response.ok) throw new Error(`Place search failed (${response.status})`);
+        const places = await response.json();
+        if (!Array.isArray(places)) throw new Error('Invalid place search response');
         if (inp.value.trim().toLowerCase() === q) showSug(local, places);
       } catch { /* offline: local results only */ }
-    }, 350);
+    }, 1000);
   };
   const showSug = (local, places) => {
-    if (!local.length && !places.length) { sug.innerHTML = '<button disabled>No matches in Southern California</button>'; sug.hidden = false; return; }
+    if (!local.length && !places.length) { sug.innerHTML = '<button disabled>No matches in the United States</button>'; sug.hidden = false; return; }
     sug.innerHTML = local.map((s) => `<button data-s="${stations.indexOf(s)}"><span>${esc(s.name)}</span><small>AQI ${s.aqi}</small></button>`).join('')
       + places.map((p) => `<button data-lat="${p.lat}" data-lng="${p.lon}"><span>${esc(p.display_name.split(',').slice(0, 2).join(','))}</span><small>Place</small></button>`).join('');
     sug.hidden = false;
     $$('button', sug).forEach((b) => b.onclick = () => {
       sug.hidden = true; inp.blur();
       if (b.dataset.s) return select(stations[+b.dataset.s], true);
-      me = null; m.flyTo([+b.dataset.lat, +b.dataset.lng], 11);
-      setTimeout(() => { const c = m.getCenter(); const near = [...stations].sort((a, z) => distKm(c, a) - distKm(c, z))[0]; drawRail(); if (near) select(near, false); }, 700);
+      me = { lat: +b.dataset.lat, lng: +b.dataset.lng };
+      m.flyTo([me.lat, me.lng], 11);
     });
   };
   clr.onclick = () => { inp.value = ''; clr.hidden = true; sug.hidden = true; };
   $('#msForm', view).onsubmit = (e) => { e.preventDefault(); $('button[data-s], button[data-lat]', sug)?.click(); };
-  m.on('moveend', () => { if (!me && !sortWorst && !selected) drawRail(); });
+  m.on('dragstart', () => { me = null; });
+  m.on('moveend', () => {
+    if (!me && !sortWorst && !selected) drawRail();
+    clearTimeout(moveTimer);
+    moveTimer = setTimeout(() => load(m.getCenter()), 500);
+  });
 
   setTimeout(() => m.invalidateSize(), 150);
   return () => m.remove();

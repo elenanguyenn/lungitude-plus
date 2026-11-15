@@ -19,7 +19,8 @@ api/air.js      ← EPA AirNow proxy (keeps your key secret, caches 20 min)
 cd www && python3 -m http.server 5173     # or: npx serve www
 ```
 Open http://localhost:5173. Map, quizzes, games and shop all work. LCAI uses offline answers and the map
-uses clearly-labelled sample data until the API keys are set up (step 2).
+uses clearly-labelled sample data until the API keys are set up (step 2). With AirNow configured, map
+search and live PM2.5 monitors cover U.S. locations; each result shows its distance from the selected place.
 
 ## 2. Put the website online (Vercel, free)
 1. Push this folder to GitHub → import it at vercel.com.
@@ -62,6 +63,6 @@ Leaflet and Google Fonts load from a CDN; for an offline-proof build, download `
 |---|---|---|
 | Accounts, XP, coins, streak | Saved on the device | Firebase/Supabase auth so progress syncs across devices |
 | Leaderboard | Your real XP ranked against a labelled sample league | Store players' XP in the same backend |
-| Map data | Live EPA AirNow via `/api/air`; sample data fallback | Add CDC EPH / NASA FIRMS active-fire points |
+| Map data | Live EPA AirNow monitors around the selected U.S. location; labelled SoCal sample fallback | Add CDC EPH / NASA FIRMS active-fire points |
 | Fire-risk areas | Illustrative outlines | CAL FIRE Fire Hazard Severity Zones GeoJSON |
 | LCAI | Gemini via `/api/chat`; offline keyword answers fallback | Rate limiting (Vercel KV / Upstash) before launch |

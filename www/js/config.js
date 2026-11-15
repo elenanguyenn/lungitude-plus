@@ -8,6 +8,6 @@ export const CONFIG = {
   API_BASE: isNativeShell ? 'https://YOUR-PROJECT.vercel.app' : '',
   MAP_CENTER: [34.05, -117.75],
   MAP_ZOOM: 9,
-  // Approximate SoCal bounding box used for the AirNow query and the place search.
+  // Sample-data fallback boundary; live AirNow queries use the current U.S. map location.
   BBOX: { minLat: 32.5, maxLat: 35.3, minLng: -120.6, maxLng: -114.9 },
 };
