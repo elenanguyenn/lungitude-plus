@@ -5,7 +5,7 @@
 const isNativeShell = location.protocol === 'capacitor:' || location.protocol === 'ionic:';
 
 export const CONFIG = {
-  API_BASE: isNativeShell ? 'https://YOUR-PROJECT.vercel.app' : '',
+  API_BASE: isNativeShell ? 'https://lungitude-new.vercel.app' : '',
   // Keep Gemini disabled unless a parent or guardian has set up and approved the API account.
   AI_ENABLED: false,
   MAP_CENTER: [34.05, -117.75],
