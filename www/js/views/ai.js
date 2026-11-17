@@ -45,6 +45,11 @@ export function render(view) {
       </form>
     </div>`;
   const msgs = $('#msgs', view), inp = $('#inp', view), page = $('#aiPage', view);
+  const mode = $('#mode', view);
+  const setMode = (text) => { mode.textContent = text; mode.hidden = !text; };
+  setMode(CONFIG.AI_ENABLED
+    ? 'AI replies are enabled. Your message is shared with our AI provider to generate a response.'
+    : '');
   const bubble = (role, html) => {
     const row = document.createElement('div');
     row.className = `msg-row ${role === 'user' ? 'msg-row-user' : 'msg-row-ai'}`;
@@ -62,23 +67,30 @@ export function render(view) {
     store.update((st) => { st.chat.push({ role: 'user', text }); st.chat = st.chat.slice(-30); st.stats.questionsAsked++; });
     const t = bubble('ai', '<span class="typing"><i></i><i></i><i></i></span>');
     $('#botSlot svg', view)?.classList.add('thinking');
-    let reply, offline = false;
-    try {
-      const ctx = sessionStorage.getItem('lungitude.nearest');
-      const res = await fetch(`${CONFIG.API_BASE}/api/chat`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: store.get().chat.slice(-12), context: ctx ? JSON.parse(ctx) : null }),
-        signal: AbortSignal.timeout(20000),
-      });
-      if (!res.ok) throw new Error(res.status);
-      reply = (await res.json()).reply;
-      if (!reply) throw new Error('empty');
-    } catch {
-      offline = true; await new Promise((r) => setTimeout(r, 500)); reply = localAnswer(text);
+    let reply, offline = !CONFIG.AI_ENABLED;
+    if (CONFIG.AI_ENABLED) {
+      try {
+        const ctx = sessionStorage.getItem('lungitude.nearest');
+        const res = await fetch(`${CONFIG.API_BASE}/api/chat`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: store.get().chat.slice(-12), context: ctx ? JSON.parse(ctx) : null }),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!res.ok) throw new Error(res.status);
+        reply = (await res.json()).reply;
+        if (!reply) throw new Error('empty');
+      } catch {
+        offline = true;
+        reply = localAnswer(text);
+      }
+    } else {
+      reply = localAnswer(text);
     }
     $('#botSlot svg', view)?.classList.remove('thinking');
     t.innerHTML = md(reply); haptic();
-    $('#mode', view).textContent = offline ? 'Offline mode: built-in answers. Connect the Gemini proxy for full AI.' : '';
+    setMode(offline
+      ? CONFIG.AI_ENABLED ? 'I couldn’t get an AI response, so here’s a quick answer from my guide.' : ''
+      : 'AI replies are enabled. Your message is shared with our AI provider to generate a response.');
     store.update((st) => { st.chat.push({ role: 'model', text: reply }); st.chat = st.chat.slice(-30); });
   };
 

@@ -1,55 +1,91 @@
 // Learning content. Facts are written to match EPA/AirNow, CDC, IARC and NIOSH/NFPA guidance.
 // Keep claims cautious: these screens are educational, not medical advice.
 
-export const LESSON = [
+export const LUNG_LESSONS = [
   {
-    title: '1. The invisible enemy: wildfire smoke',
+    id: 'smoke-basics',
+    title: 'Wildfire smoke and your lungs',
     body: [
       'Wildfire smoke is a mix of gases and fine particles from burning vegetation, buildings and other materials. Its biggest public-health threat is <strong>PM2.5</strong>: particles 2.5 micrometers or smaller, roughly <strong>30 times thinner than a human hair</strong>.',
       'PM2.5 is small enough to slip past the nose and throat and travel deep into the lungs, and some of it can reach the bloodstream. When fires burn homes and cars, the smoke can also carry metals, plastics and other toxic chemicals.',
     ],
     check: {
-      q: 'Which particles travel deepest into the lungs?',
+      q: 'Which particles can travel deep into the lungs?',
       choices: ['PM10 (coarse dust)', 'PM2.5 (fine particles)', 'Pollen grains'],
       answer: 1,
-      right: 'Correct! PM2.5 is fine enough to reach the alveoli, the tiny air sacs where oxygen enters the blood.',
-      wrong: 'Not quite: the answer is PM2.5. Larger particles like PM10 and pollen are mostly trapped in the nose and upper airways.',
+      fact: 'PM2.5 is small enough to reach deep into the lungs, including the alveoli.',
     },
   },
   {
-    title: '2. How smoke damages lung cells',
+    id: 'cell-damage',
+    title: 'How smoke can damage cells',
     body: [
       'Inhaled particles trigger inflammation and <strong>oxidative stress</strong>, an overload of reactive molecules (free radicals) that can damage cell membranes, proteins and <strong>DNA</strong>. Over years, DNA damage that isn\'t repaired can cause mutations, one pathway toward cancer.',
       'Smoke contains known carcinogens such as benzene, formaldehyde and <strong>polycyclic aromatic hydrocarbons (PAHs)</strong>. The International Agency for Research on Cancer (IARC) classifies outdoor air pollution and particulate matter as carcinogenic to humans (Group 1), and in 2022 placed occupational exposure as a firefighter in Group 1 too.',
     ],
     check: {
-      q: 'What is the term for cell damage caused by an overload of free radicals from toxins?',
+      q: 'What is the term for damage linked to an overload of reactive molecules?',
       choices: ['Cellular hypertrophy', 'Oxidative stress', 'Mitotic overload'],
       answer: 1,
-      right: 'Correct! Oxidative stress overwhelms the lungs\' antioxidant defenses and can damage DNA.',
-      wrong: 'Not quite: the answer is oxidative stress. Hypertrophy means cells growing larger, and "mitotic overload" isn\'t a real term.',
+      fact: 'Oxidative stress occurs when reactive molecules overwhelm the body’s defenses and can damage cells.',
     },
   },
   {
-    title: '3. Who is most at risk',
+    id: 'risk-and-exposure',
+    title: 'Risk, exposure, and cancer',
     body: [
       'Children, older adults, pregnant people, people with asthma, COPD or heart disease, and outdoor workers, <strong>including firefighters</strong>, face the highest risk from smoke.',
       'Exposure isn\'t shared equally. Inland valleys where mountains and temperature inversions trap smoke, homes without air filtration, and jobs that can\'t move indoors all raise exposure, which makes wildfire smoke a <strong>health equity</strong> issue.',
+      'Cancer risk is affected by many factors, including smoking, workplace exposures, and air pollution. A risk factor can raise the chance of disease, but it does not mean someone will get cancer; a single smoke event cannot predict an individual’s risk.',
     ],
     check: {
-      q: 'The sky looks clear today. Is the air safe?',
-      choices: ['Yes, smoke is always visible', 'Not necessarily: check the AQI', 'Only if it isn\'t windy'],
+      q: 'Does having a cancer risk factor mean a person will get cancer?',
+      choices: ['Yes, it guarantees cancer', 'No, it can increase risk but cannot predict an individual outcome', 'Only if symptoms appear'],
       answer: 1,
-      right: 'Exactly. PM2.5 can be high even when the sky looks clear, so check the AQI on the map.',
-      wrong: 'PM2.5 can be unhealthy even without visible haze. The AQI is the reliable check.',
+      fact: 'Risk factors can change the likelihood of disease, but they do not determine an individual outcome.',
     },
   },
   {
-    title: '4. Protection and prevention',
+    id: 'reduce-exposure',
+    title: 'Ways to reduce smoke exposure',
     body: [
       'Check the AQI before heading out. On smoky days, stay indoors with windows closed and run a <strong>HEPA air purifier</strong> or a MERV-13 filter. Outdoors, a well-fitted <strong>N95 respirator</strong> filters fine particles; cloth and surgical masks do little.',
       'Firefighters should follow their department\'s respiratory protection program: <strong>SCBA</strong> during structure-fire suppression <em>and</em> overhaul, on-scene decon, showering soon after exposure, and regular medical screenings that include lung-function tests.',
     ],
+    check: {
+      q: 'Which option helps reduce exposure to fine smoke particles outdoors?',
+      choices: ['A well-fitted N95 respirator', 'A loose cloth mask', 'No protection is needed if smoke is hard to see'],
+      answer: 0,
+      fact: 'A well-fitted N95 can filter fine particles. Follow public-health guidance and workplace respiratory-protection rules.',
+    },
+  },
+  {
+    id: 'screening',
+    title: 'Screening and early detection',
+    body: [
+      'Lung cancer screening is intended for people at increased risk who do not have symptoms. In the United States, some guidelines recommend yearly low-dose CT scans for adults who meet specific age and smoking-history criteria.',
+      'Eligibility and recommendations can change and differ by country or health system. A healthcare professional can help determine whether screening is appropriate. Screening is not a diagnosis, and a scan may require follow-up.',
+    ],
+    check: {
+      q: 'Who should decide whether someone meets current lung cancer screening criteria?',
+      choices: ['A healthcare professional, using current local guidance and personal history', 'Anyone with a cough, without any evaluation', 'The air-quality map'],
+      answer: 0,
+      fact: 'Screening recommendations use factors such as age and smoking history; discuss eligibility and benefits with a healthcare professional.',
+    },
+  },
+  {
+    id: 'prevention-and-care',
+    title: 'Prevention and getting care',
+    body: [
+      'Avoiding tobacco, reducing exposure to secondhand smoke and workplace carcinogens, and following smoke-safety guidance can help lower some risks. Firefighters should use their department’s respiratory-protection and decontamination procedures.',
+      'Lung cancer may not cause noticeable symptoms early, and symptoms such as a persistent cough can have many causes. This lesson cannot diagnose or rule out cancer. If you have health concerns, contact a healthcare professional; seek urgent care for severe breathing difficulty or chest pain.',
+    ],
+    check: {
+      q: 'Can the absence of symptoms rule out lung cancer?',
+      choices: ['Yes, there are always early symptoms', 'No, absence of symptoms does not rule it out', 'Only a home smoke detector can tell'],
+      answer: 1,
+      fact: 'Some people have no noticeable symptoms early. A healthcare professional can assess concerns and recommend next steps.',
+    },
   },
 ];
 
@@ -80,6 +116,47 @@ export const QUIZ = [
     fact: 'Mountains ring the basin and warm air layers act like a lid, holding smog and smoke near the ground.' },
 ];
 
+export const SMOKE_QUIZZES = [
+  {
+    id: 'pm-basics',
+    title: 'PM2.5 & air quality basics',
+    description: 'Learn what AQI readings and tiny particles tell us about the air.',
+    questions: [QUIZ[0], QUIZ[1], QUIZ[3], QUIZ[7]],
+  },
+  {
+    id: 'fireground',
+    title: 'Fireground exposure',
+    description: 'Check your knowledge of smoke hazards during and after a fire.',
+    questions: [QUIZ[2], QUIZ[4], QUIZ[6], {
+      q: 'When should firefighters follow their department’s decontamination procedures?',
+      choices: ['Only when soot is visible', 'After exposure, following department procedures', 'Only at the end of the fire season'],
+      answer: 1,
+      fact: 'Follow your department’s respiratory-protection and decontamination procedures after fire exposure.',
+    }],
+  },
+  {
+    id: 'everyday-protection',
+    title: 'Everyday smoke protection',
+    description: 'Practice choosing actions that can reduce exposure to wildfire smoke.',
+    questions: [QUIZ[5], {
+      q: 'What should you use to check for unhealthy air when the sky looks clear?',
+      choices: ['The Air Quality Index (AQI)', 'The color of the sky alone', 'The outdoor temperature'],
+      answer: 0,
+      fact: 'Smoke particles can be present without obvious haze. Check current air-quality information.',
+    }, {
+      q: 'Which option can help improve indoor particle filtration?',
+      choices: ['A properly sized HEPA air cleaner', 'Opening windows during heavy smoke', 'Using a scented candle'],
+      answer: 0,
+      fact: 'A properly sized HEPA air cleaner can reduce airborne particles indoors. Keep following local public-health advice.',
+    }, {
+      q: 'Why is it helpful to reduce strenuous outdoor activity during smoky conditions?',
+      choices: ['Exercise makes particles larger', 'Breathing harder can increase the amount of polluted air inhaled', 'Exercise removes smoke from the air'],
+      answer: 1,
+      fact: 'Reducing strenuous outdoor activity can reduce how much polluted air you breathe in.',
+    }],
+  },
+];
+
 export const TIPS = [
   { ico: '📱', who: 'Everyone', title: 'Check before you go', text: 'Look at the AQI on the Lungitude+ map before outdoor plans. Smoke can be unhealthy even when the sky looks clear.' },
   { ico: '🏠', who: 'Everyone', title: 'Make a clean-air room', text: 'Close windows and doors and run a HEPA air purifier, or build a box-fan filter with a MERV-13 furnace filter.' },
@@ -107,4 +184,4 @@ export const LOCAL_KB = [
   { keys: ['inland', 'socal', 'california', 'fontana', 'riverside', 'san bernardino'], r: 'Inland Southern California often has worse air because the basin is ringed by mountains and temperature inversions act like a lid, trapping freeway, freight and wildfire pollution near the ground. Check the **Map** tab for live readings.' },
   { keys: ['coin', 'shop', 'xp', 'streak', 'accessor'], r: 'Finish modules on the **Home** tab to earn coins and XP. The first completion each day pays the full reward, and spending coins in the **Shop** dresses me up! 🎩' },
 ];
-export const LOCAL_FALLBACK = 'I\'m in offline mode right now, so I can only answer common questions about PM2.5, the AQI, masks, air purifiers, symptoms, cancer risk and firefighter protection. Try asking about one of those!';
+export const LOCAL_FALLBACK = 'I’m LCAI, your respiratory health guide. I can help with PM2.5, the AQI, wildfire smoke, masks, air purifiers, symptoms, cancer risk, and firefighter protection. What would you like to know?';

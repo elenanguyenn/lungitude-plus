@@ -25,7 +25,7 @@ search and live PM2.5 monitors cover U.S. locations; each result shows its dista
 ## 2. Put the website online (Vercel, free)
 1. Push this folder to GitHub → import it at vercel.com.
 2. In Project → Settings → Environment Variables add:
-   - `GEMINI_API_KEY` from https://aistudio.google.com/apikey
+   - `GEMINI_API_KEY` from https://aistudio.google.com/apikey (optional; keep `AI_ENABLED` off unless an eligible parent/guardian manages and approves the account)
    - `AIRNOW_API_KEY` from https://docs.airnowapi.org/ (free account)
    - optional `GEMINI_MODEL` (default `gemini-2.5-flash`)
 3. Deploy. The site, `/api/chat` and `/api/air` now run on the same domain. The status pill on the map turns green ("Live · AirNow").
@@ -37,7 +37,7 @@ To test the API functions locally: `npm i -g vercel && vercel dev`.
 npm install
 npx cap add ios          # first time only, creates ios/
 ```
-1. In `www/js/config.js` set `API_BASE` to your Vercel URL (e.g. `https://lungitude.vercel.app`).
+1. In `www/js/config.js` set `API_BASE` to your Vercel URL (e.g. `https://lungitude.vercel.app`). LCAI uses built-in answers by default; only set `AI_ENABLED: true` after a parent/guardian has set up and approved the Gemini account and the privacy implications.
 2. `npm run ios` copies `www/` into the Xcode project and opens it.
 3. In Xcode → `App/Info.plist` add **Privacy - Location When In Use Usage Description**:
    "Lungitude+ uses your location to show the nearest air-quality monitor."
@@ -53,6 +53,8 @@ Leaflet and Google Fonts load from a CDN; for an offline-proof build, download `
 
 ## Customizing
 - **New module/card:** add an entry in `js/data/modules.js`, then a view in `js/views/modules.js` and a route in `js/app.js`.
+- **More Lung Cancer lessons:** add an item to `LUNG_LESSONS` in `js/data/content.js`; the course list, per-lesson quiz, progress, and next-lesson link are generated from that catalog.
+- **More Smoke Shield quizzes:** add a quiz unit to `SMOKE_QUIZZES` in `js/data/content.js`; the course overview, progress, and next-quiz navigation follow the catalog.
 - **Card images:** The `img` paths in `www/js/data/modules.js` point to files in `www/assets/cards/`. Replace an image with the same filename, or update its `img` path when using a different filename or format.
 - **Quiz and breathing card photos:** `quiz-smoke.jpg` is by Magpieturtle, from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Canada_wildfire_smoke_on_June_7,_2023,_on_Pleasant_Hill_Road_in_Flanders,_NJ.jpg), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). `breathe-meditation.jpg` is from [Unsplash](https://images.unsplash.com/photo-1506126613408-eca07ce68773).
 - **Shop items:** `SHOP` in `js/avatar.js`. Each item is a few lines of SVG.

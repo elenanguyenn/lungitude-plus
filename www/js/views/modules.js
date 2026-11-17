@@ -1,93 +1,226 @@
 import { icons } from '../icons.js';
 import { store, award } from '../store.js';
 import { byId } from '../data/modules.js';
-import { LESSON, QUIZ, TIPS } from '../data/content.js';
+import { LUNG_LESSONS, SMOKE_QUIZZES, TIPS } from '../data/content.js';
 import { $, $$, haptic, coinToast } from '../util.js';
 
-const head = (title, right = '') => `<header class="page-head"><a class="pill-btn learning-back" href="#/home">${icons.back}<span>Back</span></a><h1>${title}</h1>${right || '<span class="learning-head-spacer"></span>'}</header>`;
+const head = (title, right = '', back = '#/home', backLabel = 'Back') => `<header class="page-head"><a class="pill-btn learning-back" href="${back}">${icons.back}<span>${backLabel}</span></a><h1>${title}</h1>${right || '<span class="learning-head-spacer"></span>'}</header>`;
 const rewardHTML = (r) => `<div class="reward"><span>${icons.coin} +${r.coins} coins</span><span>${icons.bolt} +${r.xp} XP</span></div>
   ${r.firstToday ? '' : '<p class="note center">Already completed today: repeats earn 10% XP. Come back tomorrow for the full reward!</p>'}`;
 function finish(id, fraction = 1) { const r = award(byId(id), fraction); if (r.coins || r.xp) coinToast(r.coins, r.xp); haptic('Medium'); return r; }
 
-// ---------- Lung Cancer Interactive (merged screen 11 + lunginteractive.html) ----------
-export function lesson(view) {
+// ---------- Lung Cancer lesson series ----------
+export function lesson(view, lessonId) {
   const mod = byId('lung');
-  view.innerHTML = `${head('Lung Cancer Interactive', `<span class="xp-pill">+${mod.xp} XP</span>`)}<div class="body"><div class="gbar"></div><div id="flow"></div></div>`;
-  const flow = $('#flow', view);
-  let correct = 0; const checks = LESSON.filter((s) => s.check).length;
-  const step = (i) => {
-    const s = LESSON[i];
-    if (!s) {
-      const r = finish('lung', Math.max(0.5, correct / checks));
-      flow.insertAdjacentHTML('beforeend', `<div class="panel reveal center"><h2>Lesson complete</h2>
-        <p>You got ${correct} of ${checks} quick checks right.</p>${rewardHTML(r)}
-        <div class="btn-row"><a class="cta ghost" href="#/quiz">Smoke Shield Quiz</a><a class="cta" href="#/breathe">Breathing Coach</a></div></div>`);
-      return;
-    }
-    flow.insertAdjacentHTML('beforeend', `<section class="panel reveal"><h2>${s.title}</h2>${s.body.map((p) => `<p>${p}</p>`).join('')}</section>`);
-    if (!s.check) { step(i + 1); return; }
-    const c = s.check;
-    const box = document.createElement('section'); box.className = 'panel reveal';
-    box.innerHTML = `<h3>Quick check: ${c.q}</h3><div class="choices">${c.choices.map((t, k) => `<button class="choice" data-k="${k}">${String.fromCharCode(65 + k)}. ${t}</button>`).join('')}</div>`;
-    flow.appendChild(box);
-    $$('.choice', box).forEach((b) => b.addEventListener('click', () => {
-      const k = +b.dataset.k; const ok = k === c.answer; if (ok) correct++;
-      $$('.choice', box).forEach((x, j) => { x.disabled = true; if (j === c.answer) x.classList.add('correct'); else if (j === k) x.classList.add('wrong'); });
-      box.insertAdjacentHTML('beforeend', `<div class="feedback ${ok ? 'ok' : 'bad'}">${ok ? c.right : c.wrong}</div>`);
-      haptic(); setTimeout(() => { step(i + 1); box.nextElementSibling?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 600);
-    }));
+  const completions = store.get().completions;
+  const progress = LUNG_LESSONS.filter((item) => completions[`lung:${item.id}`]?.count).length;
+  if (!lessonId) {
+    const next = LUNG_LESSONS.find((item) => !completions[`lung:${item.id}`]?.count);
+    view.innerHTML = `${head('Lung Cancer Course', `<span class="xp-pill">${progress}/${LUNG_LESSONS.length}</span>`)}
+      <div class="body course-page">
+        <section class="course-hero">
+          <span class="course-eyebrow">LUNG HEALTH · 6 SHORT LESSONS</span>
+          <h2>Understand lung cancer risk and smoke exposure.</h2>
+          <p>Learn at your own pace. Every lesson includes a quick knowledge check, and you can revisit any topic.</p>
+          <div class="course-progress-label"><span>YOUR PROGRESS</span><strong>${progress} of ${LUNG_LESSONS.length} complete</strong></div>
+          <div class="progress" role="progressbar" aria-label="Course progress" aria-valuemin="0" aria-valuemax="${LUNG_LESSONS.length}" aria-valuenow="${progress}">
+            <i style="width:${(progress / LUNG_LESSONS.length) * 100}%"></i>
+          </div>
+          <a class="cta" href="#/learn/lung/${(next || LUNG_LESSONS[0]).id}">${next ? progress ? 'Continue learning' : 'Start course' : 'Review course'} <span aria-hidden="true">→</span></a>
+        </section>
+        <div class="course-list-heading"><h2>Lessons</h2><span>${LUNG_LESSONS.length} lessons · quiz in each</span></div>
+        <nav class="course-lesson-list" aria-label="Lung Cancer lessons">
+        ${LUNG_LESSONS.map((item, i) => {
+          const done = Boolean(completions[`lung:${item.id}`]?.count);
+          return `<a class="course-lesson-link${done ? ' is-done' : ''}" href="#/learn/lung/${item.id}">
+            <span class="course-step" aria-hidden="true">${done ? '✓' : String(i + 1).padStart(2, '0')}</span>
+            <span class="course-lesson-info"><strong>${item.title}</strong><small>3 min <span aria-hidden="true">·</span> Knowledge check</small></span>
+            <span class="course-lesson-status">${done ? 'Review' : 'Start'} <span aria-hidden="true">›</span></span>
+          </a>`;
+        }).join('')}
+        </nav>
+        ${!next ? '<p class="course-complete-note">Course complete. Revisit any lesson whenever you want a refresher.</p>' : ''}
+      </div>`;
+    return;
+  }
+
+  const index = LUNG_LESSONS.findIndex((item) => item.id === lessonId);
+  if (index < 0) { location.hash = '#/learn/lung'; return; }
+  const item = LUNG_LESSONS[index];
+  const unitReward = {
+    ...mod,
+    id: `lung:${item.id}`,
+    xp: Math.floor(mod.xp / LUNG_LESSONS.length),
+    coins: Math.floor(mod.coins / LUNG_LESSONS.length),
   };
-  step(0);
+  view.innerHTML = `${head('Lung Cancer', `<span class="xp-pill">${index + 1} / ${LUNG_LESSONS.length}</span>`, '#/learn/lung', 'Course')}
+    <div class="body course-page course-lesson">
+      <div class="course-lesson-meta"><span>LESSON ${String(index + 1).padStart(2, '0')} OF ${String(LUNG_LESSONS.length).padStart(2, '0')}</span><span>3 MIN <i aria-hidden="true">·</i> QUICK QUIZ</span></div>
+      <div class="progress" role="progressbar" aria-label="Course position" aria-valuemin="0" aria-valuemax="${LUNG_LESSONS.length}" aria-valuenow="${index + 1}">
+        <i style="width:${((index + 1) / LUNG_LESSONS.length) * 100}%"></i>
+      </div>
+      <h2 class="course-lesson-title">${item.title}</h2>
+      <article class="lesson-reading">${item.body.map((paragraph) => `<p>${paragraph}</p>`).join('')}</article>
+      <section class="course-quiz" id="lessonCheck">
+        <span class="course-eyebrow">CHECK YOUR UNDERSTANDING</span>
+        <h3>${item.check.q}</h3>
+        <div class="choices">${item.check.choices.map((choice, i) => `<button class="choice" data-i="${i}"><span class="course-answer-letter">${String.fromCharCode(65 + i)}</span><span>${choice}</span></button>`).join('')}</div>
+        <div id="lessonFeedback" aria-live="polite"></div>
+      </section>
+      <section class="course-result" id="lessonResult" aria-live="polite" hidden></section>
+    </div>`;
+  const previous = LUNG_LESSONS[index - 1];
+  const next = LUNG_LESSONS[index + 1];
+  const nav = document.createElement('nav');
+  nav.className = 'lesson-nav';
+  nav.setAttribute('aria-label', 'Lesson navigation');
+  nav.innerHTML = `<button class="course-nav-button secondary" id="lessonPrevious">${previous ? '← Previous' : 'Course overview'}</button>
+    <button class="course-nav-button" id="lessonNext" disabled>${next ? 'Next lesson →' : 'Finish course'}</button>`;
+  view.appendChild(nav);
+  $('#lessonPrevious', nav).onclick = () => { location.hash = previous ? `#/learn/lung/${previous.id}` : '#/learn/lung'; };
+  $('#lessonNext', nav).onclick = () => { location.hash = next ? `#/learn/lung/${next.id}` : '#/learn/lung'; };
+  const check = $('#lessonCheck', view);
+  $$('.choice', check).forEach((button) => button.onclick = () => {
+    const selected = Number(button.dataset.i);
+    const correct = selected === item.check.answer;
+    $$('.choice', check).forEach((choice, i) => {
+      choice.disabled = true;
+      if (i === item.check.answer) choice.classList.add('correct');
+      else if (i === selected) choice.classList.add('wrong');
+    });
+    $('#lessonFeedback', check).innerHTML = `<div class="feedback ${correct ? 'ok' : 'bad'}">${item.check.fact}</div>`;
+    const reward = award(unitReward, correct ? 1 : 0.5, unitReward.id);
+    if (reward.coins || reward.xp) coinToast(reward.coins, reward.xp);
+    haptic('Medium');
+    const result = $('#lessonResult', view);
+    result.hidden = false;
+    result.innerHTML = `<strong>${correct ? 'Correct' : 'Good try'}</strong>${rewardHTML(reward)}`;
+    $('#lessonNext', nav).disabled = false;
+    result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
 }
 
-// ---------- Smoke Shield Quiz ----------
-export function quiz(view) {
-  let q = 0, xp = 0, streak = 0, bestStreak = 0, right = 0;
-  view.innerHTML = `${head('Smoke Shield Quiz', '<span class="xp-pill" id="qxp">0 XP</span>')}
-    <div class="body learning-wide quiz-page">
-      <section class="tips-intro quiz-intro">
-        <span class="tips-kicker">AIR QUALITY · KNOWLEDGE CHECK</span>
-        <h2>How strong is<br>your smoke shield?</h2>
-        <p>${QUIZ.length} quick questions to build your wildfire-smoke know-how.</p>
-      </section>
-      <div class="quiz-progress-copy"><span>YOUR PROGRESS</span><span id="qcount">01 <i>/ ${String(QUIZ.length).padStart(2, '0')}</i></span></div>
-      <div class="progress quiz-progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="${QUIZ.length}" aria-valuenow="0"><i id="qbar"></i></div>
+// ---------- Smoke Shield quiz series ----------
+export function quiz(view, quizId) {
+  const completions = store.get().completions;
+  const progress = SMOKE_QUIZZES.filter((item) => completions[`quiz:${item.id}`]?.count).length;
+  if (!quizId) {
+    const next = SMOKE_QUIZZES.find((item) => !completions[`quiz:${item.id}`]?.count);
+    view.innerHTML = `${head('Smoke Shield Course', `<span class="xp-pill">${progress}/${SMOKE_QUIZZES.length}</span>`)}
+      <div class="body course-page">
+        <section class="course-hero">
+          <span class="course-eyebrow">WILDFIRE SMOKE · 3 QUIZZES</span>
+          <h2>Build your smoke-safety knowledge.</h2>
+          <p>Short quizzes on air quality, fireground exposure, and everyday protection. Complete one at a time or revisit any quiz for practice.</p>
+          <div class="course-progress-label"><span>YOUR PROGRESS</span><strong>${progress} of ${SMOKE_QUIZZES.length} complete</strong></div>
+          <div class="progress" role="progressbar" aria-label="Smoke Shield progress" aria-valuemin="0" aria-valuemax="${SMOKE_QUIZZES.length}" aria-valuenow="${progress}">
+            <i style="width:${(progress / SMOKE_QUIZZES.length) * 100}%"></i>
+          </div>
+          <a class="cta" href="#/quiz/${(next || SMOKE_QUIZZES[0]).id}">${next ? progress ? 'Continue learning' : 'Start course' : 'Review course'} <span aria-hidden="true">→</span></a>
+        </section>
+        <div class="course-list-heading"><h2>Quiz units</h2><span>4 questions each</span></div>
+        <nav class="course-lesson-list" aria-label="Smoke Shield quizzes">
+          ${SMOKE_QUIZZES.map((item, index) => {
+            const done = Boolean(completions[`quiz:${item.id}`]?.count);
+            return `<a class="course-lesson-link${done ? ' is-done' : ''}" href="#/quiz/${item.id}">
+              <span class="course-step" aria-hidden="true">${done ? '✓' : String(index + 1).padStart(2, '0')}</span>
+              <span class="course-lesson-info"><strong>${item.title}</strong><small>4 questions <span aria-hidden="true">·</span> ${item.description}</small></span>
+              <span class="course-lesson-status">${done ? 'Review' : 'Start'} <span aria-hidden="true">›</span></span>
+            </a>`;
+          }).join('')}
+        </nav>
+        ${!next ? '<p class="course-complete-note">Course complete. Revisit any quiz to practice again.</p>' : ''}
+      </div>`;
+    return;
+  }
+
+  const unit = SMOKE_QUIZZES.find((item) => item.id === quizId);
+  if (!unit) { location.hash = '#/quiz'; return; }
+  const index = SMOKE_QUIZZES.indexOf(unit);
+  const previous = SMOKE_QUIZZES[index - 1];
+  const next = SMOKE_QUIZZES[index + 1];
+  const mod = byId('quiz');
+  const unitReward = {
+    ...mod,
+    xp: Math.floor(mod.xp / SMOKE_QUIZZES.length)
+      + (index === SMOKE_QUIZZES.length - 1 ? mod.xp % SMOKE_QUIZZES.length : 0),
+    coins: Math.floor(mod.coins / SMOKE_QUIZZES.length)
+      + (index === SMOKE_QUIZZES.length - 1 ? mod.coins % SMOKE_QUIZZES.length : 0),
+  };
+  let q = 0, xp = 0, streak = 0, bestStreak = 0, right = 0, answered = false;
+  view.innerHTML = `${head('Smoke Shield', `<span class="xp-pill" id="qxp">0 XP</span>`, '#/quiz', 'Course')}
+    <div class="body course-page course-lesson">
+      <div class="course-lesson-meta"><span>QUIZ ${String(index + 1).padStart(2, '0')} OF ${String(SMOKE_QUIZZES.length).padStart(2, '0')}</span><span>4 QUESTIONS</span></div>
+      <div class="progress quiz-progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="${unit.questions.length}" aria-valuenow="0"><i id="qbar"></i></div>
+      <h2 class="course-lesson-title">${unit.title}</h2>
+      <p class="course-quiz-description">${unit.description}</p>
+      <div class="quiz-progress-copy"><span>QUESTION</span><span id="qcount">01 / ${String(unit.questions.length).padStart(2, '0')}</span></div>
       <div id="qcard" aria-live="polite"></div>
       <p class="quiz-streak" id="qstreak">Best streak <strong>0</strong></p>
     </div>`;
   const card = $('#qcard', view);
+  const nav = document.createElement('nav');
+  nav.className = 'lesson-nav';
+  nav.setAttribute('aria-label', 'Quiz navigation');
+  nav.innerHTML = `<button class="course-nav-button secondary" id="quizPrevious">${previous ? '← Previous quiz' : 'Course overview'}</button>
+    <button class="course-nav-button" id="quizContinue" disabled>Continue</button>`;
+  view.appendChild(nav);
+  $('#quizPrevious', nav).onclick = () => { location.hash = previous ? `#/quiz/${previous.id}` : '#/quiz'; };
   const draw = () => {
-    if (q >= QUIZ.length) {
-      store.update((s) => { s.stats.quizBest = Math.max(s.stats.quizBest, right); });
-      const r = finish('quiz', right / QUIZ.length);
+    if (q >= unit.questions.length) {
+      store.update((state) => { state.stats.quizBest = Math.max(state.stats.quizBest, right); });
+      const reward = award(unitReward, right / unit.questions.length, `quiz:${unit.id}`);
+      if (reward.coins || reward.xp) coinToast(reward.coins, reward.xp);
+      haptic('Medium');
+      const resultNext = SMOKE_QUIZZES[index + 1];
+      card.innerHTML = `<section class="course-result">
+        <span class="course-eyebrow">QUIZ COMPLETE</span><h3>${right} of ${unit.questions.length} correct</h3>
+        <p>Best streak: ${bestStreak}</p>${rewardHTML(reward)}
+      </section>`;
       $('#qbar', view).style.width = '100%';
-      $('.quiz-progress', view).setAttribute('aria-valuenow', String(QUIZ.length));
-      $('#qcount', view).innerHTML = `${String(QUIZ.length).padStart(2, '0')} <i>/ ${String(QUIZ.length).padStart(2, '0')}</i>`;
-      card.innerHTML = `<div class="panel quiz-result center reveal"><span class="tips-kicker">SHIELD CHECK COMPLETE</span><h2>Nice work.</h2><p>${right} of ${QUIZ.length} correct · best streak ${bestStreak}.</p>${rewardHTML(r)}
-        <div class="btn-row"><button class="cta ghost" id="again">Try again</button><a class="cta" href="#/breathe">Breathing Coach →</a></div></div>`;
-      $('#again', card).onclick = () => { q = xp = streak = bestStreak = right = 0; draw(); };
+      $('.quiz-progress', view).setAttribute('aria-valuenow', String(unit.questions.length));
+      $('#qcount', view).textContent = `${String(unit.questions.length).padStart(2, '0')} / ${String(unit.questions.length).padStart(2, '0')}`;
+      const button = $('#quizContinue', nav);
+      button.disabled = false;
+      button.textContent = resultNext ? 'Next quiz →' : 'Course overview';
+      button.onclick = () => { location.hash = resultNext ? `#/quiz/${resultNext.id}` : '#/quiz'; };
       return;
     }
-    const d = QUIZ[q];
-    const progress = $('.quiz-progress', view);
-    progress.setAttribute('aria-valuenow', String(q));
-    $('#qcount', view).innerHTML = `${String(q + 1).padStart(2, '0')} <i>/ ${String(QUIZ.length).padStart(2, '0')}</i>`;
-    $('#qbar', view).style.width = `${(q / QUIZ.length) * 100}%`;
+
+    const question = unit.questions[q];
+    answered = false;
+    const progressBar = $('.quiz-progress', view);
+    progressBar.setAttribute('aria-valuenow', String(q));
+    $('#qcount', view).textContent = `${String(q + 1).padStart(2, '0')} / ${String(unit.questions.length).padStart(2, '0')}`;
+    $('#qbar', view).style.width = `${(q / unit.questions.length) * 100}%`;
     $('#qstreak strong', view).textContent = String(bestStreak);
-    card.innerHTML = `<div class="panel quiz-question reveal">
-      <div class="learning-question-count">QUESTION ${String(q + 1).padStart(2, '0')}</div>
-      <h3>${d.q}</h3>
-      <div class="choices">${d.choices.map((c, i) => `<button class="choice quiz-choice" data-i="${i}"><span class="quiz-choice-letter">${String.fromCharCode(65 + i)}</span><span>${c}</span></button>`).join('')}</div>
-      <div id="qfoot"></div></div>`;
-    $$('.choice', card).forEach((b) => b.onclick = () => {
-      const i = +b.dataset.i, ok = i === d.answer;
-      $$('.choice', card).forEach((x, j) => { x.disabled = true; if (j === d.answer) x.classList.add('correct'); else if (j === i) x.classList.add('wrong'); });
-      if (ok) { right++; xp += 10 + streak * 2; streak++; bestStreak = Math.max(bestStreak, streak); } else streak = 0;
-      progress.setAttribute('aria-valuenow', String(q + 1));
-      $('#qbar', view).style.width = `${((q + 1) / QUIZ.length) * 100}%`;
-      $('#qxp', view).textContent = `${xp} XP`; $('#qstreak strong', view).textContent = String(bestStreak);
-      $('#qfoot', card).innerHTML = `<div class="feedback ${ok ? 'ok' : 'bad'}">${d.fact}</div><button class="cta learning-next" id="qn">${q === QUIZ.length - 1 ? 'Finish' : 'Continue'}</button>`;
-      $('#qn', card).onclick = () => { q++; draw(); }; haptic();
+    card.innerHTML = `<section class="course-quiz quiz-question">
+      <span class="course-eyebrow">QUESTION ${String(q + 1).padStart(2, '0')}</span>
+      <h3>${question.q}</h3>
+      <div class="choices">${question.choices.map((choice, i) => `<button class="choice quiz-choice" data-i="${i}"><span class="course-answer-letter">${String.fromCharCode(65 + i)}</span><span>${choice}</span></button>`).join('')}</div>
+      <div id="qfoot" aria-live="polite"></div>
+    </section>`;
+    $$('.choice', card).forEach((button) => button.onclick = () => {
+      if (answered) return;
+      answered = true;
+      const selected = Number(button.dataset.i);
+      const correct = selected === question.answer;
+      $$('.choice', card).forEach((choice, i) => {
+        choice.disabled = true;
+        if (i === question.answer) choice.classList.add('correct');
+        else if (i === selected) choice.classList.add('wrong');
+      });
+      if (correct) { right++; xp += 10 + streak * 2; streak++; bestStreak = Math.max(bestStreak, streak); } else streak = 0;
+      progressBar.setAttribute('aria-valuenow', String(q + 1));
+      $('#qbar', view).style.width = `${((q + 1) / unit.questions.length) * 100}%`;
+      $('#qxp', view).textContent = `${xp} XP`;
+      $('#qstreak strong', view).textContent = String(bestStreak);
+      $('#qfoot', card).innerHTML = `<div class="feedback ${correct ? 'ok' : 'bad'}">${question.fact}</div>`;
+      const continueButton = $('#quizContinue', nav);
+      continueButton.disabled = false;
+      continueButton.textContent = q === unit.questions.length - 1 ? 'See results' : 'Continue';
+      continueButton.onclick = () => { q++; draw(); card.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+      haptic();
     });
   };
   draw();

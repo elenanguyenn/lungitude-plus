@@ -27,8 +27,8 @@ const ROUTES = [
   [/^map$/, map.render, 'map', 'bleed'],
   [/^ai$/, ai.render, 'ai', 'bleed'],
   [/^profile$/, profile.render, 'profile', 'nav'],
-  [/^learn\/lung$/, mods.lesson, 'home', 'bare'],
-  [/^quiz$/, mods.quiz, 'home', 'bare'],
+  [/^learn\/lung(?:\/([^/]+))?$/, mods.lesson, 'home', 'bare'],
+  [/^quiz(?:\/([^/]+))?$/, mods.quiz, 'home', 'bare'],
   [/^play\/frenzy$/, mods.frenzy, 'home', 'bare'],
   [/^watch\/pm25$/, mods.video, 'home', 'bare'],
   [/^tips$/, mods.tips, 'home', 'bare'],
@@ -40,7 +40,7 @@ const view = $('#view');
 
 function route() {
   const path = location.hash.replace(/^#\/?/, '') || 'home';
-  document.body.classList.toggle('learning-mode', /^(learn\/lung|quiz|watch\/pm25|tips|breathe)$/.test(path));
+  document.body.classList.toggle('learning-mode', /^(learn\/lung(?:\/[^/]+)?|quiz(?:\/[^/]+)?|watch\/pm25|tips|breathe)$/.test(path));
   const s = store.get();
   const authed = s.signedIn || s.guest;
   const match = ROUTES.find(([re]) => re.test(path));

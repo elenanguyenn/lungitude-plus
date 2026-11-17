@@ -73,15 +73,23 @@ export function liveStreak() {
  * @param {object} mod  module from data/modules.js
  * @param {number} fraction 0..1 performance (quiz score etc.)
  */
-export function award(mod, fraction = 1) {
+export function award(mod, fraction = 1, completionId = mod.id) {
   const t = today();
-  const c = state.completions[mod.id] || { count: 0, lastDay: null, best: 0 };
+  const c = state.completions[completionId] || { count: 0, lastDay: null, best: 0 };
   const firstToday = c.lastDay !== t;
   const xp = Math.round(mod.xp * fraction * (firstToday ? 1 : 0.1));
   const coins = firstToday && fraction >= 0.5 ? mod.coins : 0;
   store.update((s) => {
     s.xp += xp; s.coins += coins;
-    s.completions[mod.id] = { count: c.count + 1, lastDay: t, best: Math.max(c.best, fraction) };
+    s.completions[completionId] = { count: c.count + 1, lastDay: t, best: Math.max(c.best, fraction) };
+    if (completionId !== mod.id) {
+      const aggregate = s.completions[mod.id] || { count: 0, lastDay: null, best: 0 };
+      s.completions[mod.id] = {
+        count: aggregate.count + 1,
+        lastDay: t,
+        best: Math.max(aggregate.best, fraction),
+      };
+    }
     touchStreak();
   });
   return { xp, coins, firstToday };

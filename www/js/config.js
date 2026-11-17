@@ -6,6 +6,8 @@ const isNativeShell = location.protocol === 'capacitor:' || location.protocol ==
 
 export const CONFIG = {
   API_BASE: isNativeShell ? 'https://YOUR-PROJECT.vercel.app' : '',
+  // Keep Gemini disabled unless a parent or guardian has set up and approved the API account.
+  AI_ENABLED: false,
   MAP_CENTER: [34.05, -117.75],
   MAP_ZOOM: 9,
   // Sample-data fallback boundary; live AirNow queries use the current U.S. map location.
