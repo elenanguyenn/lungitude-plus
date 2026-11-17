@@ -1,15 +1,16 @@
 import { icons } from '../icons.js';
 import { store } from '../store.js';
 import { avatarSVG } from '../avatar.js';
+import { CONFIG } from '../config.js';
 import { $, esc, openSheet, toast } from '../util.js';
 
 const row = (id, ico, label, sub = '', right = icons.chevron.replace('<svg', '<svg class="chev"')) =>
   `<li><button id="${id}"><span class="ico">${ico}</span><span class="lbl">${label}${sub ? `<small>${sub}</small>` : ''}</span>${right}</button></li>`;
 
 const INFO = {
-  about: ['About Lungitude+', `<p>Lungitude+ tracks wildfire PM2.5 across Southern California using EPA AirNow data, explains what it means for your health with LCAI (powered by Google Gemini), and turns lung-health learning into a game.</p><p>Built by Elena Nguyen. Winner, Congressional App Challenge.</p><p style="font-size:13px">Data: U.S. EPA AirNow (preliminary, unvalidated real-time data). AQI categories follow the EPA's 2024 PM2.5 update. LCAI is educational and not a substitute for medical advice. In an emergency, call 911.</p>`],
+  about: ['About Lungitude+', `<p>Lungitude+ helps you explore wildfire PM2.5, understand its potential health effects with LCAI, and build lung-health knowledge through interactive learning.</p><p style="font-size:13px">Data: U.S. EPA AirNow (preliminary, unvalidated real-time data). AQI categories follow the EPA's 2024 PM2.5 update. LCAI is educational and not a substitute for medical advice. In an emergency, call 911.</p>`],
   terms: ['Terms & Conditions', '<p>Lungitude+ is provided for education. Air-quality readings are preliminary and can be delayed or missing. Always follow official guidance from local air districts, public-health agencies and your fire department. LCAI may make mistakes; verify important health information with a professional.</p>'],
-  privacy: ['Privacy Policy', '<p>Your account, progress and chat history are stored on this device only. Location is used only on the map to find the nearest monitor and is never stored. Chat messages you send to LCAI are forwarded to Google Gemini to generate replies. Delete everything any time with “Delete account”.</p>'],
+  privacy: ['Privacy Policy', `<p>Your account, progress and chat history are stored on this device. Location is used only on the map to find nearby monitors and is not stored. ${CONFIG.AI_ENABLED ? 'Messages you send to LCAI are sent to an AI provider to generate replies.' : 'LCAI uses built-in answers; messages are not sent to an AI service.'} Delete everything any time with “Delete account”.</p>`],
 };
 
 export function render(view) {
