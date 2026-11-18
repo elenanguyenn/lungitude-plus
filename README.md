@@ -42,7 +42,7 @@ npx cap add ios          # first time only, creates ios/
 3. In Xcode → `App/Info.plist` add **Privacy - Location When In Use Usage Description**:
    "Lungitude+ uses your location to show the nearest air-quality monitor."
 4. Set your Team under Signing & Capabilities, pick an iPhone simulator or your phone, press ▶.
-5. Replace the app icon: drag `www/assets/icons/icon-1024.png` (or your Canva logo) into `Assets.xcassets/AppIcon`.
+5. Replace the app icon: drag `www/assets/icons/app-store-icon-1024.png` (or your Canva logo) into `Assets.xcassets/AppIcon`.
 
 Every time you change files in `www/`, run `npx cap sync ios` again.
 
