@@ -1,6 +1,6 @@
 // Vercel serverless function: POST /api/chat  → Google Gemini
 // Keeps GEMINI_API_KEY on the server (never ship it inside the iOS app or website JS).
-// Env vars: GEMINI_API_KEY (required), GEMINI_MODEL (optional, default gemini-2.5-flash)
+// Env vars: GEMINI_API_KEY (required), GEMINI_MODEL (optional, default gemini-3.8-flash)
 
 const SYSTEM = `You are LCAI, the friendly digital health companion inside Lungitude+, an app about wildfire smoke, PM2.5, lung cancer prevention and firefighter respiratory health in Southern California.
 Rules:
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     system += `\nContext: the user last viewed ${String(c.name).slice(0, 60)} on the map: AQI ${Number(c.aqi)} (${String(c.category).slice(0, 40)}), PM2.5 ${Number(c.pm25)} µg/m³${c.live ? '' : ' (sample data, not live)'}.`;
   }
 
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
