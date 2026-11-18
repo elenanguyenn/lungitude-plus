@@ -27,7 +27,7 @@ search and live PM2.5 monitors cover U.S. locations; each result shows its dista
 2. In Project → Settings → Environment Variables add:
    - `GEMINI_API_KEY` from https://aistudio.google.com/apikey (optional; keep `AI_ENABLED` off unless an eligible parent/guardian manages and approves the account)
    - `AIRNOW_API_KEY` from https://docs.airnowapi.org/ (free account)
-   - optional `GEMINI_MODEL` (default `gemini-3.8-flash`)
+   - optional `GEMINI_MODEL` (primary model; otherwise tries efficient Gemini models, then `gemini-3.8-flash`)
 3. Deploy. The site, `/api/chat` and `/api/air` now run on the same domain. The status pill on the map turns green ("Live · AirNow").
 
 To test the API functions locally: `npm i -g vercel && vercel dev`.

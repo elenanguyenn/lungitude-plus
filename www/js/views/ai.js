@@ -74,7 +74,7 @@ export function render(view) {
         const res = await fetch(`${CONFIG.API_BASE}/api/chat`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: store.get().chat.slice(-12), context: ctx ? JSON.parse(ctx) : null }),
-          signal: AbortSignal.timeout(20000),
+          signal: AbortSignal.timeout(30000),
         });
         if (!res.ok) throw new Error(res.status);
         reply = (await res.json()).reply;

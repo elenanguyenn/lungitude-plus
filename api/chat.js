@@ -1,6 +1,6 @@
 // Vercel serverless function: POST /api/chat  → Google Gemini
 // Keeps GEMINI_API_KEY on the server (never ship it inside the iOS app or website JS).
-// Env vars: GEMINI_API_KEY (required), GEMINI_MODEL (optional, default gemini-3.8-flash)
+// Env vars: GEMINI_API_KEY (required), GEMINI_MODEL (optional, primary model)
 
 const SYSTEM = `You are LCAI, the friendly digital health companion inside Lungitude+, an app about wildfire smoke, PM2.5, lung cancer prevention and firefighter respiratory health in Southern California.
 Rules:
@@ -39,22 +39,36 @@ export default async function handler(req, res) {
     system += `\nContext: the user last viewed ${String(c.name).slice(0, 60)} on the map: AQI ${Number(c.aqi)} (${String(c.category).slice(0, 40)}), PM2.5 ${Number(c.pm25)} µg/m³${c.live ? '' : ' (sample data, not live)'}.`;
   }
 
-  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-  try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents,
-        generationConfig: { temperature: 0.5, maxOutputTokens: 600 },
-      }),
-    });
-    const data = await r.json();
-    if (!r.ok) return res.status(502).json({ error: data?.error?.message || 'Gemini error' });
-    const reply = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim();
-    return res.status(200).json({ reply: reply || 'Sorry, I couldn’t come up with an answer. Try rephrasing?' });
-  } catch (e) {
-    return res.status(502).json({ error: 'Upstream request failed' });
+  const models = [
+    process.env.GEMINI_MODEL,
+    'gemini-3.5-flash-lite',
+    'gemini-3.6-flash',
+    'gemini-3.8-flash',
+  ].filter((model, index, list) => model && list.indexOf(model) === index);
+
+  let lastError = 'Gemini error';
+  for (const model of models) {
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents,
+          generationConfig: { temperature: 0.5, maxOutputTokens: 600 },
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        lastError = data?.error?.message || 'Gemini error';
+        continue;
+      }
+      const reply = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim();
+      if (reply) return res.status(200).json({ reply });
+      lastError = 'Gemini returned an empty response';
+    } catch {
+      lastError = 'Upstream request failed';
+    }
   }
+  return res.status(502).json({ error: lastError });
 }
